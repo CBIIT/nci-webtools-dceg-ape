@@ -15,7 +15,7 @@ export default function RootLayout({ children }) {
   const routes = [
     { title: "Home", path: "/", subRoutes: [] },
     { title: "APE", path: "/ape", subRoutes: [] },
-    { title: "Help", path: "/help", subRoutes: [] },
+    { title: "About", path: "/about", subRoutes: [] },
   ];
   const queryClient = new QueryClient({});
 
@@ -28,12 +28,12 @@ export default function RootLayout({ children }) {
         <GoogleAnalytics id="tba" />
         <Script src="https://cbiit.github.io/nci-softwaresolutions-elements/components/include-html.js"></Script>
       </head>
-      <body className="d-flex flex-column vh-100">
+      <body className="d-flex flex-column vh-100" style={{ minHeight: 300 }}>
         <Header />
-        <main className="position-relative d-flex flex-column flex-grow-1 align-items-stretch">
+        <main className="position-relative d-flex flex-column flex-grow-1 align-items-stretch bg-black cover-image">
           <Navbar routes={routes} />
           <ErrorBoundary
-            fallback={<Alert variant="warning">Error loading Form</Alert>}
+            fallback={<Alert variant="warning">Error loading page</Alert>}
           >
             <Suspense fallback={<Loading />}>
               <QueryClientProvider client={queryClient}>
