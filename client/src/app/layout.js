@@ -32,13 +32,9 @@ export default function RootLayout({ children }) {
         <Header />
         <main className="position-relative d-flex flex-column flex-grow-1 align-items-stretch bg-black">
           <Navbar routes={routes} />
-          <ErrorBoundary
-            fallback={<Alert variant="warning">Error loading page</Alert>}
-          >
+          <ErrorBoundary fallback={<Alert variant="warning">Error loading page</Alert>}>
             <Suspense fallback={<Loading />}>
-              <QueryClientProvider client={queryClient}>
-                {children}
-              </QueryClientProvider>
+              <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
             </Suspense>
           </ErrorBoundary>
         </main>
