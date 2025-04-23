@@ -8,16 +8,11 @@ export default function Home() {
         <Container>
           <Row>
             <Col md={6}>
-              <div
-                className="d-flex h-100 align-items-center"
-                style={{ minHeight: "300px" }}
-              >
+              <div className="d-flex h-100 align-items-center" style={{ minHeight: "300px" }}>
                 <div>
                   <h1 className="fs-1 text-light fw-light mb-3">APE</h1>
                   <hr className="border-white" />
-                  <p className="lead text-light">
-                    Anatomically Predictive Extension
-                  </p>
+                  <p className="lead text-light">Anatomically Predictive Extension</p>
 
                   <Link className="link-secondary" href="/ape">
                     Analyze
@@ -39,18 +34,31 @@ export default function Home() {
           <Row>
             <Col>
               <p>
-                This tool is designed to assist researchers and clinicians in
-                analyzing CT scans by providing a user-friendly interface for
-                extending partial-body scans.
+                This tool is designed to assist researchers and clinicians in analyzing CT scans by providing a
+                user-friendly interface for extending partial-body scans.
               </p>
               <p>
                 User uploaded CT Scans are first processed by{" "}
                 <a href="https://totalsegmentator.com/" target="_blank">
                   TotalSegmentator
                 </a>{" "}
-                to identify segments of anatomical structures. APE then extends
-                these scans by referencing similar anatomical structures.
+                to identify segments of anatomical structures. APE then extends these scans by referencing similar
+                anatomical structures.
               </p>
+              <div>
+                <p class="h6">Reference</p>
+                <ol>
+                  <li>
+                    Sergio Morató Rafet, Choonik Lee, Keith T. Griffin, Monjoy Saha, Choonsik Lee, Matthew M. Mille.
+                    Realistic extension of partial-body pediatric CT for whole-body organ dose estimation in
+                    radiotherapy patients. Radiation Physics and Chemistry, Volume 226, 2025, 112194.{" "}
+                    <a href="https://doi.org/10.1016/j.radphyschem.2024.112194" target="_blank">
+                      https://doi.org/10.1016/j.radphyschem.2024.112194
+                    </a>
+                    .
+                  </li>
+                </ol>
+              </div>
             </Col>
           </Row>
         </Container>
