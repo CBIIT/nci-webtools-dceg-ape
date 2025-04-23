@@ -30,7 +30,7 @@ export default function RootLayout({ children }) {
       </head>
       <body className="d-flex flex-column vh-100" style={{ minHeight: 300 }}>
         <Header />
-        <main className="position-relative d-flex flex-column flex-grow-1 align-items-stretch bg-black cover-image">
+        <main className="position-relative d-flex flex-column flex-grow-1 align-items-stretch bg-black">
           <Navbar routes={routes} />
           <ErrorBoundary
             fallback={<Alert variant="warning">Error loading page</Alert>}
