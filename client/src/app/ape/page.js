@@ -1,8 +1,13 @@
 "use client";
-import { Container, Card, Row, Col, Form, Button } from "react-bootstrap";
+import { Container, Card, Row, Col, Form, Button, ProgressBar } from "react-bootstrap";
 import { useForm } from "react-hook-form";
+import { useState } from "react";
+import { useQuery, useMutation, useQueryClient, useIsMutating } from "@tanstack/react-query";
+import { v4 as uuidv4 } from "uuid";
+import { submit, upload } from "@/services/queries";
 
 export default function ApePage() {
+  const queryClient = useQueryClient();
   const {
     register,
     handleSubmit,
@@ -10,6 +15,17 @@ export default function ApePage() {
     reset,
     formState: { errors },
   } = useForm();
+
+  const submitForm = useMutation({
+    mutationKey: "submit",
+    mutationFn: ({ params }) => submit(params.id, params),
+    onSettled: (data, error) => {
+      if (error) setError(error.response.data.error);
+      else if (data) setError(null);
+    },
+  });
+  const [progress, setProgress] = useState(0);
+  const [progressLabel, setProgressLabel] = useState("");
 
   function numberInputOnWheelPreventChange(e) {
     // Prevent the input value change
@@ -22,6 +38,24 @@ export default function ApePage() {
 
   async function onSubmit(formData) {
     console.log(formData);
+    const id = uuidv4();
+
+    try {
+      // do not upload files in parallel (minimize memory usage & time per upload)
+      let filesUploaded = 0;
+      for (const file of formData.files) {
+        const fileData = new FormData();
+        fileData.append("files", file);
+        fileData.append("id", id);
+        // await axios.post(`/api/submit/${id}`, fileData);
+        await upload(id, fileData);
+        filesUploaded++;
+        setProgress(Math.round((filesUploaded * 100) / formData.files.length));
+        setProgressLabel(`Uploaded ${filesUploaded} of ${formData.files.length} files`);
+      }
+
+      await submitForm.mutateAsync({ params: { id, ...formData } });
+    } catch (error) {}
   }
 
   function onReset(event) {
@@ -123,7 +157,29 @@ export default function ApePage() {
                   />
                   <Form.Text className="text-danger">{errors?.thickness?.message}</Form.Text>
                 </Form.Group>
+                <Form.Group controlId="files" className="my-3">
+                  <Form.Control
+                    {...register("files", { required: true })}
+                    type="file"
+                    multiple
+                    accept=".dcm"
+                    isInvalid={errors?.files}
+                    // disabled={formState.status}
+                  />
+                  <Form.Control.Feedback className="d-block" type="invalid">
+                    {errors?.files && errors.files.message}
+                  </Form.Control.Feedback>
+                </Form.Group>
 
+                <div className="text-center my-3">
+                  {progressLabel}
+                  {progress > 0 && (
+                    <>
+                      <div>Please do not close this page while your upload is in progress.</div>
+                      <ProgressBar className="w-100" now={progress} label={`${progress}%`} />
+                    </>
+                  )}
+                </div>
                 <div className="text-end">
                   <Button type="reset" variant="outline-danger" className="me-1">
                     Reset

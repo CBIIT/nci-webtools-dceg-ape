@@ -5,13 +5,8 @@ import cors from "cors";
 import multer from "multer";
 import path from "path";
 import DiskStorage from "./storage.js";
-import {
-  logRequests,
-  logErrors,
-  logFiles,
-  handleValidationErrors,
-  logForbiddenErrors,
-} from "./middleware.js";
+import { logRequests, logErrors, logFiles, handleValidationErrors, logForbiddenErrors } from "./middleware.js";
+import { submit } from "../analysis/ape.js";
 
 export function createApi(env) {
   // define middleware
@@ -35,25 +30,20 @@ export function createApi(env) {
   // register routes
   router.get("/ping", async (req, res) => res.json(true));
 
-  router.post(
-    "/upload/:id",
-    validate,
-    handleValidationErrors,
-    upload.any(),
-    logFiles(),
-    (req, res) => {
-      res.json({ id: req.params.id });
-    }
-  );
+  router.post("/submit/:id", validate, handleValidationErrors, upload.array("files"), logFiles(), async (req, res) => {
+    const { files = [], body } = req;
+    const { logger } = req.app.locals;
 
-  router.post(
-    "/submit/:id",
-    validate,
-    handleValidationErrors,
-    async (req, res) => {
-      res.json(await submit(req.body.params, req.body.data));
+    for (const file of files) {
+      logger.debug(`Remove PII from file: ${file.originalname}`);
     }
-  );
+
+    if (body.params) {
+      res.json(await submit(body.params));
+    } else {
+      res.json(true);
+    }
+  });
 
   router.use(logForbiddenErrors());
   router.use(logErrors());
