@@ -1,14 +1,11 @@
 FROM nvidia/cuda:12.8.1-cudnn-runtime-rockylinux9
 
 RUN dnf -y update \
-    # && dnf -y install 'dnf-command(config-manager)' \
-    # epel-release \
-    # && dnf config-manager --set-enabled crb \
     && dnf -y install \
-    python3-devel \
-    # gcc-c++ \
-    # cmake \
-    # openblas-devel \
+    gcc-c++ \
+    mesa-libGL \
+    python3.12-devel \
+    python3.12-pip \
     nodejs \
     && dnf clean all
 
@@ -18,7 +15,7 @@ WORKDIR /app
 
 COPY worker/requirements.txt ./
 
-RUN pip install -r requirements.txt
+RUN pip3.12 install -r requirements.txt
 
 # COPY worker/package.json app/package-lock.json ./
 

@@ -4,10 +4,8 @@ RUN dnf -y update \
     && dnf -y install \
     gcc-c++ \
     mesa-libGL \
-    python3.12 \
     python3.12-devel \
     python3.12-pip \
-    python3.12-setuptools \
     nodejs \
     && dnf clean all
 

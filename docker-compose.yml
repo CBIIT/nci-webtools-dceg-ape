@@ -1,23 +1,23 @@
 services:
-  # backend:
-  #   build:
-  #     context: "."
-  #     dockerfile: "./docker/backend.dockerfile"
-  #   env_file: server/.env
-  #   ports:
-  #     - "10000:10000"
+  backend:
+    build:
+      context: "."
+      dockerfile: "./docker/backend.dockerfile"
+    env_file: server/.env
+    ports:
+      - "10000:10000"
 
-  # frontend:
-  #   build:
-  #     context: "."
-  #     dockerfile: "./docker/frontend.dockerfile"
-  #     args:
-  #       APP_PATH: /
-  #   environment:
-  #     API_BASE_URL: http://backend:10000
-  #     APP_PATH: /
-  #   ports:
-  #     - "3000:80"
+  frontend:
+    build:
+      context: "."
+      dockerfile: "./docker/frontend.dockerfile"
+      args:
+        APP_PATH: /
+    environment:
+      API_BASE_URL: http://backend:10000
+      APP_PATH: /
+    ports:
+      - "3000:3000"
 
   worker:
     profiles:
@@ -34,15 +34,15 @@ services:
       - batch-worker
     build:
       context: "."
-      dockerfile: "./docker/batch-worker.dockerfile"
+      dockerfile: "./docker/batch-gpu-worker.dockerfile"
     volumes:
       - ./data:/data
     env_file: worker/.env
     # entrypoint: "node app.js"
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              count: all
-              capabilities: [gpu]
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices:
+    #         - driver: nvidia
+    #           count: all
+    #           capabilities: [gpu]
