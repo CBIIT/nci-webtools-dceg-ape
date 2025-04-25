@@ -25,7 +25,7 @@ export default function RootLayout({ children }) {
         <title>APE</title>
         <meta name="keywords" content="ape" />
         <link rel="icon" href="/favicon.ico" sizes="any" />
-        <GoogleAnalytics id="tba" />
+        <GoogleAnalytics id="G-6T4G7BLJHP" />
         <Script src="https://cbiit.github.io/nci-softwaresolutions-elements/components/include-html.js"></Script>
       </head>
       <body className="d-flex flex-column vh-100" style={{ minHeight: 300 }}>
