@@ -9,7 +9,11 @@ export default function Footer() {
             </a>
             <div className="h6">
               at the{" "}
-              <a className="text-light fw-semibold" target="_blank" rel="noopener noreferrer" href="https://www.cancer.gov/">
+              <a
+                className="text-light fw-semibold"
+                target="_blank"
+                rel="noopener noreferrer"
+                href="https://www.cancer.gov/">
                 National Cancer Institute
               </a>
             </div>
@@ -19,7 +23,11 @@ export default function Footer() {
               <div className="h5 mb-1 font-weight-light">CONTACT INFORMATION</div>
               <ul className="list-unstyled mb-0">
                 <li>
-                  <a className="text-light" target="_blank" rel="noopener noreferrer" href="mailto:NCIAPEWebAdmin@mail.nih.gov">
+                  <a
+                    className="text-light"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    href="mailto:NCIAPEWebAdmin@mail.nih.gov">
                     Contact Us
                   </a>
                 </li>
@@ -29,22 +37,38 @@ export default function Footer() {
               <div className="h5 mb-1 font-weight-light">POLICIES</div>
               <ul className="list-unstyled mb-0">
                 <li>
-                  <a className="text-light" target="_blank" rel="noopener noreferrer" href="https://www.cancer.gov/policies/accessibility">
+                  <a
+                    className="text-light"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    href="https://www.cancer.gov/policies/accessibility">
                     Accessibility
                   </a>
                 </li>
                 <li>
-                  <a className="text-light" target="_blank" rel="noopener noreferrer" href="https://www.cancer.gov/policies/disclaimer">
+                  <a
+                    className="text-light"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    href="https://www.cancer.gov/policies/disclaimer">
                     Disclaimer
                   </a>
                 </li>
                 <li>
-                  <a className="text-light" target="_blank" rel="noopener noreferrer" href="https://www.cancer.gov/policies/foia">
+                  <a
+                    className="text-light"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    href="https://www.cancer.gov/policies/foia">
                     FOIA
                   </a>
                 </li>
                 <li>
-                  <a className="text-light" target="_blank" rel="noopener noreferrer" href="https://www.hhs.gov/vulnerability-disclosure-policy/index.html">
+                  <a
+                    className="text-light"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    href="https://www.hhs.gov/vulnerability-disclosure-policy/index.html">
                     HHS Vulnerability Disclosure
                   </a>
                 </li>
@@ -76,8 +100,20 @@ export default function Footer() {
               </ul>
             </div>
           </div>
+          <div className="row">
+            <div className="col-sm-4">
+              <div>
+                <b>Version:</b> {process.env.NEXT_PUBLIC_VERSION}
+              </div>
+              <div>
+                <b>Last Update:</b> {process.env.NEXT_PUBLIC_LAST_UPDATE}
+              </div>
+            </div>
+            <div className="col-sm-4 align-middle">
+              <div className="text-center">NIH ... Turning Discovery Into Health ®</div>
+            </div>
+          </div>
         </div>
-        <div className="text-center">NIH ... Turning Discovery Into Health ®</div>
       </div>
     </footer>
   );
