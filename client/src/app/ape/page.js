@@ -1,5 +1,5 @@
 "use client";
-import { Container, Card, Row, Col, Form, Button, ProgressBar } from "react-bootstrap";
+import { Container, Card, Row, Col, Form, Button, ProgressBar, Alert } from "react-bootstrap";
 import { useForm } from "react-hook-form";
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient, useIsMutating } from "@tanstack/react-query";
@@ -26,6 +26,7 @@ export default function ApePage() {
   });
   const [progress, setProgress] = useState(0);
   const [progressLabel, setProgressLabel] = useState("");
+  const [formError, setFormError] = useState(null);
 
   function numberInputOnWheelPreventChange(e) {
     // Prevent the input value change
@@ -38,6 +39,7 @@ export default function ApePage() {
 
   async function onSubmit(formData) {
     console.log(formData);
+    setFormError(null);
     const id = uuidv4();
 
     try {
@@ -53,9 +55,11 @@ export default function ApePage() {
         setProgress(Math.round((filesUploaded * 100) / formData.files.length));
         setProgressLabel(`Uploaded ${filesUploaded} of ${formData.files.length} files`);
       }
-
       await submitForm.mutateAsync({ params: { id, ...formData } });
-    } catch (error) {}
+    } catch (error) {
+      console.error("Error uploading files:", error);
+      setFormError(error.response?.data?.message || error.message || "An unknown error occurred.");
+    }
   }
 
   function onReset(event) {
@@ -65,11 +69,14 @@ export default function ApePage() {
 
   return (
     <div className="flex-grow-1 bg-light py-4">
-      <Container>
+      <Container style={{ maxWidth: 500 }}>
         <Row className="justify-content-center">
           <Col sm="auto">
             <Card className="p-3">
-              <p>Enter patient info here. If info is unknown, approximate values can be used.</p>
+              <p>
+                Enter patient info here. If info is unknown, approximate values can be used. These values are used for
+                filtering the reference library of patients for extension.
+              </p>
               <Form onSubmit={handleSubmit(onSubmit)} onReset={onReset} noValidate>
                 <Form.Group controlId="sex" className="my-3">
                   <Form.Label>Sex</Form.Label>
@@ -87,7 +94,7 @@ export default function ApePage() {
                       validate: (value) => !isNaN(value) || "Value must be a valid number",
                       min: { value: 0, message: "Value must be at least 0" },
                     })}
-                    placeholder="Age (can be approximate)"
+                    placeholder="Age"
                     type="number"
                     min="0"
                     onWheel={numberInputOnWheelPreventChange}
@@ -102,7 +109,7 @@ export default function ApePage() {
                       validate: (value) => !isNaN(value) || "Value must be a valid number",
                       min: { value: 0, message: "Value must be at least 0" },
                     })}
-                    placeholder="Height (can be approximate)"
+                    placeholder="Height"
                     type="number"
                     min="0"
                     onWheel={numberInputOnWheelPreventChange}
@@ -117,7 +124,7 @@ export default function ApePage() {
                       validate: (value) => !isNaN(value) || "Value must be a valid number",
                       min: { value: 0, message: "Value must be at least 0" },
                     })}
-                    placeholder="Weight (can be approximate)"
+                    placeholder="Weight"
                     type="number"
                     min="0"
                     onWheel={numberInputOnWheelPreventChange}
@@ -158,18 +165,46 @@ export default function ApePage() {
                   <Form.Text className="text-danger">{errors?.thickness?.message}</Form.Text>
                 </Form.Group>
                 <Form.Group controlId="files" className="my-3">
+                  <Form.Label>CT Images (DICOM / Nifti)</Form.Label>
                   <Form.Control
                     {...register("files", { required: true })}
                     type="file"
                     multiple
-                    accept=".dcm"
+                    accept=".dcm,.nii,nii.gz,.zip"
                     isInvalid={errors?.files}
                     // disabled={formState.status}
                   />
+                  <Form.Text className="text-muted d-block">
+                    Upload a Nifti file, several DICOM files, or a zip folder containing your files
+                  </Form.Text>
                   <Form.Control.Feedback className="d-block" type="invalid">
                     {errors?.files && errors.files.message}
                   </Form.Control.Feedback>
                 </Form.Group>
+                <Form.Group controlId="email" className="my-3">
+                  <Form.Label className="fw-bold">Email</Form.Label>
+                  <Form.Control
+                    {...register("email", {
+                      pattern: {
+                        value: /\S+@\S+\.\S+/,
+                        message: "Entered value does not match email format",
+                      },
+                    })}
+                    placeholder="Email"
+                    type="email"
+                  />
+                  <Form.Text className="text-muted d-block">Receive a notification when your job is complete</Form.Text>
+                  <Form.Control.Feedback className="d-block" type="invalid">
+                    {errors?.email?.message}
+                  </Form.Control.Feedback>
+                </Form.Group>
+
+                {formError && (
+                  <Alert variant="danger">
+                    <div>An error occurred during deploy:</div>
+                    <pre>{formError}</pre>
+                  </Alert>
+                )}
 
                 <div className="text-center my-3">
                   {progressLabel}
