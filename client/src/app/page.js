@@ -46,7 +46,7 @@ export default function Home() {
                 anatomical structures.
               </p>
               <div>
-                <p class="h6">Reference</p>
+                <p className="h6">Reference</p>
                 <ol>
                   <li>
                     Sergio Morató Rafet, Choonik Lee, Keith T. Griffin, Monjoy Saha, Choonsik Lee, Matthew M. Mille.
