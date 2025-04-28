@@ -19,7 +19,7 @@ export default function Footer() {
               <div className="h5 mb-1 font-weight-light">CONTACT INFORMATION</div>
               <ul className="list-unstyled mb-0">
                 <li>
-                  <a className="text-light" target="_blank" rel="noopener noreferrer" href="mailto:APEWebAdmin@mail.nih.gov">
+                  <a className="text-light" target="_blank" rel="noopener noreferrer" href="mailto:NCIAPEWebAdmin@mail.nih.gov">
                     Contact Us
                   </a>
                 </li>
