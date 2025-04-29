@@ -4,6 +4,7 @@ import { useForm } from "react-hook-form";
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient, useIsMutating } from "@tanstack/react-query";
 import { v4 as uuidv4 } from "uuid";
+import { useRouter, usePathname } from "next/navigation";
 import { submit, upload } from "@/services/queries";
 
 export default function ApePage() {
@@ -170,12 +171,12 @@ export default function ApePage() {
                     {...register("files", { required: true })}
                     type="file"
                     multiple
-                    accept=".dcm,.nii,nii.gz,.zip"
+                    accept=".dcm,.nii,nii.gz"
                     isInvalid={errors?.files}
                     // disabled={formState.status}
                   />
                   <Form.Text className="text-muted d-block">
-                    Upload a Nifti file, several DICOM files, or a zip folder containing your files
+                    Upload a Nifti file or several DICOM files
                   </Form.Text>
                   <Form.Control.Feedback className="d-block" type="invalid">
                     {errors?.files && errors.files.message}
