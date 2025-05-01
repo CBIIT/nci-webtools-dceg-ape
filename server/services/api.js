@@ -7,6 +7,7 @@ import path from "path";
 import DiskStorage from "./storage.js";
 import { logRequests, logErrors, logFiles, handleValidationErrors, logForbiddenErrors } from "./middleware.js";
 import { submit } from "../analysis/ape.js";
+import { removePHI } from "./dicom.js";
 
 export function createApi(env) {
   // define middleware
@@ -35,7 +36,10 @@ export function createApi(env) {
     const { logger } = req.app.locals;
 
     for (const file of files) {
-      logger.debug(`Remove PII from file: ${file.originalname}`);
+      if (path.extname(file.originalname).toLowerCase() === ".dcm") {
+        await removePHI(file.path);
+        logger.debug(`Remove PHI from file: ${file.originalname}`);
+      }
     }
 
     if (body.params) {
