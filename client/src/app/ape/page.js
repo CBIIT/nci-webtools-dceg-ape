@@ -21,8 +21,8 @@ export default function ApePage() {
     mutationKey: "submit",
     mutationFn: ({ params }) => submit(params.id, params),
     onSettled: (data, error) => {
-      if (error) setError(error.response.data.error);
-      else if (data) setError(null);
+      if (error) setFormError(error.response.data.error);
+      else if (data) setFormError(null);
     },
   });
   const [progress, setProgress] = useState(0);
@@ -175,9 +175,7 @@ export default function ApePage() {
                     isInvalid={errors?.files}
                     // disabled={formState.status}
                   />
-                  <Form.Text className="text-muted d-block">
-                    Upload a Nifti file or several DICOM files
-                  </Form.Text>
+                  <Form.Text className="text-muted d-block">Upload a Nifti file or several DICOM files</Form.Text>
                   <Form.Control.Feedback className="d-block" type="invalid">
                     {errors?.files && errors.files.message}
                   </Form.Control.Feedback>
