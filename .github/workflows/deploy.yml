@@ -28,7 +28,6 @@ jobs:
     env:
       FRONTEND_CONTAINER_PORT: 80
       BACKEND_CONTAINER_PORT: 9000
-      PARAMETER_PATH: "/analysistools/${TIER}/${APP}"
       TIER: ${{ (endsWith(github.ref, '_dev') && 'dev') || (endsWith(github.ref, '_qa') && 'qa') || 'dev' }}
 
     steps:
@@ -42,7 +41,7 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_KEY }}
           aws-region: ${{ env.AWS_REGION }}
 
-      - name: Set environment variables
+      - name: Set dynamic environment variables
         run: |
           BRANCH_NAME=${{ github.ref_name }}
           VERSION=$(echo "$BRANCH_NAME" | awk -F'_' '{print $2}')
@@ -56,18 +55,20 @@ jobs:
           echo "BACKEND_IMAGE=$REPO:$TIER-backend-$VERSION-$DATE" >> $GITHUB_ENV
           echo "FRONTEND_IMAGE_LATEST=$REPO:$TIER-frontend-$VERSION-latest" >> $GITHUB_ENV
           echo "BACKEND_IMAGE_LATEST=$REPO:$TIER-backend-$VERSION-latest" >> $GITHUB_ENV
+          echo "PARAMETER_PATH=/analysistools/${TIER}/${APP}" >> $GITHUB_ENV
+          echo "ENVIRONMENT_TIER=${TIER^^}" >> $GITHUB_ENV
 
       - uses: dkershner6/aws-ssm-getparameters-action@v2
         with:
           parameterPairs: |
-            ${{ env.PARAMETER_PATH }}/ecs_cluster = ECS_CLUSTER
-            ${{ env.PARAMETER_PATH }}/ecs_web_task = ECS_WEB_TASK
-            ${{ env.PARAMETER_PATH }}/ecs_web_task_cpu_units = ECS_CLUSTER
-            ${{ env.PARAMETER_PATH }}/ecs_web_task_memory_units = ECS_CLUSTER
-            ${{ env.PARAMETER_PATH }}/ecs_web_service = ECS_WEB_SERVICE
-            ${{ env.PARAMETER_PATH }}/role_arn = ROLE_ARN
-            ${{ env.PARAMETER_PATH }}/efs_filesystem_id = EFS_FILESYSTEM_ID
-            ${{ env.PARAMETER_PATH }}/efs_access_point_id = EFS_ACCESS_POINT_ID
+            ${{ env.PARAMETER_PATH }}/ecs_cluster = ECS_CLUSTER,
+            ${{ env.PARAMETER_PATH }}/ecs_web_task = ECS_WEB_TASK,
+            ${{ env.PARAMETER_PATH }}/ecs_web_task_cpu_units = ECS_WEB_TASK_CPU_UNITS,
+            ${{ env.PARAMETER_PATH }}/ecs_web_task_memory_units = ECS_WEB_TASK_MEMORY_UNITS,
+            ${{ env.PARAMETER_PATH }}/ecs_web_service = ECS_WEB_SERVICE,
+            ${{ env.PARAMETER_PATH }}/role_arn = ROLE_ARN,
+            ${{ env.PARAMETER_PATH }}/efs_filesystem_id = EFS_FILESYSTEM_ID,
+            ${{ env.PARAMETER_PATH }}/efs_access_point_id = EFS_ACCESS_POINT_ID,
             ${{ env.PARAMETER_PATH }}/application_path = APPLICATION_PATH
           withDecryption: "true"
 
@@ -111,41 +112,97 @@ jobs:
         uses: aws-actions/amazon-ecs-render-task-definition@v1
         with:
           task-definition: ${{ env.TASK_DEFINITION_TEMPLATE_PATH }}/web.json
+          task-definition-family: ${{ env.ECS_WEB_TASK }}
           container-name: frontend
           image: ${{ env.FRONTEND_IMAGE_LATEST }}
-        env:
-          # FRONTEND_IMAGE_LATEST: ${{ env.FRONTEND_IMAGE_LATEST }}
-          ECS_WEB_TASK: ${{ env.ECS_WEB_TASK }}
-          ECS_WEB_TASK_CPU_UNITS: ${{ env.ECS_WEB_TASK_CPU_UNITS }}
-          ECS_WEB_TASK_MEMORY_UNITS: ${{ env.ECS_WEB_TASK_MEMORY_UNITS }}
-          ROLE_ARN: ${{ env.ROLE_ARN }}
-          EFS_FILESYSTEM_ID: ${{ env.EFS_FILESYSTEM_ID }}
-          EFS_ACCESS_POINT_ID: ${{ env.EFS_ACCESS_POINT_ID }}
-          AWS_REGION: ${{ env.AWS_REGION }}
-          TIER: ${{ env.TIER }}
-          APP: ${{ env.APP }}
-          FRONTEND_CONTAINER_PORT: ${{ env.FRONTEND_CONTAINER_PORT }}
-          BACKEND_CONTAINER_PORT: ${{ env.BACKEND_CONTAINER_PORT }}
+          environment-variables: |
+            API_BASE_URL=http://localhost:${{ env.BACKEND_CONTAINER_PORT }}
+            TZ=${{ env.TZ }}
+          secrets: |
+            APP_PATH=/analysistools/${{ env.TIER }}/${{ env.APP }}/application_path
+          log-configuration-log-driver: awsfirelens
+          log-configuration-options: |
+            Name=datadog
+            tls=on
+            tls.verify=off
+            dd_service=${{ env.TIER }}-${{ env.APP }}-frontend
+            dd_source=httpd
+            dd_tags=project:${{ env.APP }} tier:${{ env.TIER }}
+            provider=ecs
 
       - name: render task definition for backend
         id: render-backend
         uses: aws-actions/amazon-ecs-render-task-definition@v1
         with:
           task-definition: ${{ steps.render-frontend.outputs.task-definition }}
-          container-name: frontend
+          container-name: backend
           image: ${{ env.BACKEND_IMAGE_LATEST }}
+          environment-variables: |
+            AWS_DEFAULT_REGION=${{ env.AWS_REGION }}
+            APP_NAME=${{ env.APP }}
+            APP_PORT=${{ env.BACKEND_CONTAINER_PORT }}
+            APP_TIER=${{ env.TIER }}
+            WORKER_TYPE=fargate
+            TZ=${{ env.TZ }}
+          secrets: |
+            APP_BASE_URL=/analysistools/${{ env.TIER }}/${{ env.APP }}/base_url
+            API_BASE_URL=/analysistools/${{ env.TIER }}/${{ env.APP }}/base_url
+            LOG_LEVEL=/analysistools/${{ env.TIER }}/datadog/log_level
+            DATA_FOLDER=/analysistools/${{ env.TIER }}/${{ env.APP }}/data_folder
+            INPUT_FOLDER=/analysistools/${{ env.TIER }}/${{ env.APP }}/input_folder
+            OUTPUT_FOLDER=/analysistools/${{ env.TIER }}/${{ env.APP }}/output_folder
+            VPC_ID=/analysistools/${{ env.TIER }}/${{ env.APP }}/vpc_id
+            SUBNET_IDS=/analysistools/${{ env.TIER }}/${{ env.APP }}/subnet_ids
+            SECURITY_GROUP_IDS=/analysistools/${{ env.TIER }}/${{ env.APP }}/security_group_ids
+            ECS_CLUSTER=/analysistools/${{ env.TIER }}/${{ env.APP }}/ecs_cluster
+            WORKER_TASK_NAME=/analysistools/${{ env.TIER }}/${{ env.APP }}/ecs_worker_task
+            EMAIL_ADMIN=/analysistools/${{ env.TIER }}/${{ env.APP }}/email_admin
+            EMAIL_SMTP_HOST=/analysistools/${{ env.TIER }}/${{ env.APP }}/email_smtp_host
+            EMAIL_SMTP_PORT=/analysistools/${{ env.TIER }}/${{ env.APP }}/email_smtp_port
+          log-configuration-log-driver: awsfirelens
+          log-configuration-options: |
+            Name=datadog
+            tls=on
+            tls.verify=off
+            dd_service=${{ env.TIER }}-${{ env.APP }}-backend
+            dd_source=nodejs
+            dd_tags=project:${{ env.APP }} tier:${{ env.TIER }}
+            provider=ecs
+
+      - name: substitute task definition variables
+        id: substitute-task-definition
+        run: |
+          echo "Substituting task definition variables"
+          envsubst < ${{ steps.render-backend.outputs.task-definition }} > web.json
         env:
-          # BACKEND_IMAGE_LATEST: ${{ env.BACKEND_IMAGE_LATEST }}
+          ECS_WEB_TASK_CPU_UNITS: ${{ env.ECS_WEB_TASK_CPU_UNITS }}
+          ECS_WEB_TASK_MEMORY_UNITS: ${{ env.ECS_WEB_TASK_MEMORY_UNITS }}
+          ROLE_ARN: ${{ env.ROLE_ARN }}
+          EFS_FILESYSTEM_ID: ${{ env.EFS_FILESYSTEM_ID }}
+          EFS_ACCESS_POINT_ID: ${{ env.EFS_ACCESS_POINT_ID }}
+          FRONTEND_CONTAINER_PORT: ${{ env.FRONTEND_CONTAINER_PORT }}
+          BACKEND_CONTAINER_PORT: ${{ env.BACKEND_CONTAINER_PORT }}
           AWS_REGION: ${{ env.AWS_REGION }}
           TIER: ${{ env.TIER }}
           APP: ${{ env.APP }}
-          BACKEND_CONTAINER_PORT: ${{ env.BACKEND_CONTAINER_PORT }}
+          ENVIRONMENT_TIER: ${{ env.ENVIRONMENT_TIER}}
+
+      - name: Print rendered task definition for frontend
+        run: |
+          echo "Rendered Task Definition for Frontend:"
+          cat '${{ steps.render-frontend.outputs.task-definition }}'
+
+      - name: Print rendered task definition for backend
+        run: |
+          echo "Rendered Task Definition for Backend:"
+          cat web.json
 
       - name: Deploy Amazon ECS task definition
         uses: aws-actions/amazon-ecs-deploy-task-definition@v1
         with:
-          task-definition: ${{ steps.render-backend.outputs.task-definition }}
+          task-definition: web.json
           service: ${{ env.ECS_WEB_SERVICE }}
           cluster: ${{ env.ECS_CLUSTER }}
-          wait-for-service-stability: true
+          desired-count: 1
+          force-new-deployment: true
           propagate-tags: SERVICE
