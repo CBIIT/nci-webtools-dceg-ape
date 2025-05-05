@@ -17,7 +17,7 @@ services:
       API_BASE_URL: http://backend:10000
       APP_PATH: /
     ports:
-      - "3000:3000"
+      - "3000:80"
 
   worker:
     profiles:
