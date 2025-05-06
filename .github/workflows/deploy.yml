@@ -12,7 +12,7 @@ on:
       - "*_qa"
 
 env:
-  APP: "ape"
+  APP: ape
   TZ: America/New_York
   AWS_REGION: us-east-1
   TASK_DEFINITION_TEMPLATE_PATH: .aws
@@ -29,7 +29,10 @@ jobs:
       FRONTEND_CONTAINER_PORT: 80
       BACKEND_CONTAINER_PORT: 9000
       TIER: ${{ (endsWith(github.ref, '_dev') && 'dev') || (endsWith(github.ref, '_qa') && 'qa') || 'dev' }}
-
+      BATCH_INSTANCE_TYPE: g6.xlarge
+      BATCH_CPU_UNITS: 4
+      BATCH_GPU_UNITS: 1
+      BATCH_MEMORY_UNITS: 16
     steps:
       - uses: "actions/checkout@v4"
 
@@ -49,12 +52,15 @@ jobs:
           echo "VERSION=${VERSION:-unknown_version}" >> $GITHUB_ENV
           echo "DATE=${DATE:-unknown_date}" >> $GITHUB_ENV
 
+          TIMESTAMP=$(date +"%Y%m%d%H%M%S")
           REPO=${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.$AWS_REGION.amazonaws.com/$APP
           echo "IMAGE_REPOSITORY=$REPO" >> $GITHUB_ENV
-          echo "FRONTEND_IMAGE=$REPO:$TIER-frontend-$VERSION-$DATE" >> $GITHUB_ENV
-          echo "BACKEND_IMAGE=$REPO:$TIER-backend-$VERSION-$DATE" >> $GITHUB_ENV
-          echo "FRONTEND_IMAGE_LATEST=$REPO:$TIER-frontend-$VERSION-latest" >> $GITHUB_ENV
-          echo "BACKEND_IMAGE_LATEST=$REPO:$TIER-backend-$VERSION-latest" >> $GITHUB_ENV
+          echo "FRONTEND_IMAGE=$REPO:$TIER-frontend-${{ github.ref_name }}-$TIMESTAMP" >> $GITHUB_ENV
+          echo "BACKEND_IMAGE=$REPO:$TIER-backend-${{ github.ref_name }}-$TIMESTAMP" >> $GITHUB_ENV
+          echo "BATCH_WORKER_IMAGE=$REPO:$TIER-batch-worker-${{ github.ref_name }}-$TIMESTAMP" >> $GITHUB_ENV
+          echo "FRONTEND_IMAGE_LATEST=$REPO:$TIER-frontend-${{ github.ref_name }}-latest" >> $GITHUB_ENV
+          echo "BACKEND_IMAGE_LATEST=$REPO:$TIER-backend-${{ github.ref_name }}-latest" >> $GITHUB_ENV
+          echo "BATCH_WORKER_IMAGE_LATEST=$REPO:$TIER-batch-worker-${{ github.ref_name }}-latest" >> $GITHUB_ENV
           echo "PARAMETER_PATH=/analysistools/${TIER}/${APP}" >> $GITHUB_ENV
           echo "ENVIRONMENT_TIER=${TIER^^}" >> $GITHUB_ENV
 
@@ -69,7 +75,10 @@ jobs:
             ${{ env.PARAMETER_PATH }}/role_arn = ROLE_ARN,
             ${{ env.PARAMETER_PATH }}/efs_filesystem_id = EFS_FILESYSTEM_ID,
             ${{ env.PARAMETER_PATH }}/efs_access_point_id = EFS_ACCESS_POINT_ID,
-            ${{ env.PARAMETER_PATH }}/application_path = APPLICATION_PATH
+            ${{ env.PARAMETER_PATH }}/application_path = APPLICATION_PATH,
+            ${{ env.PARAMETER_PATH }}/batch_compute_environment = BATCH_COMPUTE_ENVIRONMENT,
+            ${{ env.PARAMETER_PATH }}/batch_job_definition = BATCH_JOB_DEFINITION,
+            ${{ env.PARAMETER_PATH }}/batch_role_arn = BATCH_ROLE_ARN
           withDecryption: "true"
 
       - name: Update client/nextjs env variables
@@ -106,6 +115,18 @@ jobs:
 
            docker push $FRONTEND_IMAGE
            docker push $FRONTEND_IMAGE_LATEST
+
+      - name: Build batch image ${{ env.BATCH_WORKER_IMAGE }}
+        id: build-batch-image
+        run: |
+          docker build \
+           -t $BATCH_WORKER_IMAGE \
+           -t $BATCH_WORKER_IMAGE_LATEST \
+           -f docker/batch-gpu-worker.dockerfile \
+           ./
+
+           docker push $BATCH_WORKER_IMAGE
+           docker push $BATCH_WORKER_IMAGE_LATEST
 
       - name: render task definition for frontend
         id: render-frontend
@@ -187,14 +208,9 @@ jobs:
           APP: ${{ env.APP }}
           ENVIRONMENT_TIER: ${{ env.ENVIRONMENT_TIER}}
 
-      - name: Print rendered task definition for frontend
+      - name: Print rendered task definition
         run: |
-          echo "Rendered Task Definition for Frontend:"
-          cat '${{ steps.render-frontend.outputs.task-definition }}'
-
-      - name: Print rendered task definition for backend
-        run: |
-          echo "Rendered Task Definition for Backend:"
+          echo "Rendered web Task Definition:"
           cat web.json
 
       - name: Deploy Amazon ECS task definition
@@ -206,3 +222,38 @@ jobs:
           desired-count: 1
           force-new-deployment: true
           propagate-tags: SERVICE
+
+      - name: substitute batch job definition variables
+        id: substitute-batch-job-definition
+        run: |
+          echo "Substituting task definition variables"
+          envsubst < $TASK_DEFINITION_TEMPLATE_PATH/batch-worker.json > batch-worker.json
+        env:
+          BATCH_JOB_DEFINITION: ${{ env.BATCH_JOB_DEFINITION }}
+          BATCH_WORKER_IMAGE_LATEST: ${{ env.BATCH_WORKER_IMAGE_LATEST }}
+          BATCH_ROLE_ARN: ${{ env.BATCH_ROLE_ARN }}
+          EFS_FILESYSTEM_ID: ${{ env.EFS_FILESYSTEM_ID }}
+          EFS_ACCESS_POINT_ID: ${{ env.EFS_ACCESS_POINT_ID }}
+          BATCH_GPU_UNITS: ${{ env.BATCH_GPU_UNITS }}
+          BATCH_CPU_UNITS: ${{ env.BATCH_CPU_UNITS }}
+          BATCH_MEMORY_UNITS: ${{ env.BATCH_MEMORY_UNITS }}
+          AWS_REGION: ${{ env.AWS_REGION }}
+          APP: ${{ env.APP }}
+          TIER: ${{ env.TIER }}
+          VERSION: ${{ env.VERSION }}
+          TZ: ${{ env.TZ }}
+          COMMIT_ID: ${{ github.sha }}
+
+      - name: Print rendered task definition
+        run: |
+          echo "Rendered web Task Definition:"
+          cat batch-worker.json
+
+      - name: Register batch job definitions
+        run: "aws batch register-job-definition --cli-input-json file://batch-worker.json"
+
+      - name: Update batch compute environment instance type
+        run: |
+          aws batch update-compute-environment \
+            --compute-environment $BATCH_COMPUTE_ENVIRONMENT \
+            --compute-resources "{\"instanceTypes\":[\"$BATCH_INSTANCE_TYPE\"]}"
