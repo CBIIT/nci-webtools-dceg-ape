@@ -33,6 +33,7 @@ jobs:
       BATCH_CPU_UNITS: 4
       BATCH_GPU_UNITS: 1
       BATCH_MEMORY_UNITS: 16
+      LAUNCH_TEMPLATE_NAME: batch-increase-container-volume-encrypt
     steps:
       - uses: "actions/checkout@v4"
 
@@ -260,4 +261,6 @@ jobs:
         run: |
           aws batch update-compute-environment \
             --compute-environment $BATCH_COMPUTE_ENVIRONMENT \
-            --compute-resources "{\"instanceTypes\":[\"$BATCH_INSTANCE_TYPE\"]}"
+            --compute-resources "{\"instanceTypes\":[\"$BATCH_INSTANCE_TYPE\"], \"launchTemplate\":{\"launchTemplateName\":\"$LAUNCH_TEMPLATE_NAME\", \"version\":\"$LT_VERSION\"}}"
+        env:
+          LT_VERSION: "$Latest"
