@@ -81,11 +81,14 @@ jobs:
             ${{ env.PARAMETER_PATH }}/batch_role_arn = BATCH_ROLE_ARN
           withDecryption: "true"
 
-      - name: Update client/nextjs env variables
-        run: envsubst < client/.env.local > client/.env.production
+      - name: Create client/nextjs .env.production file
+        run: |
+          echo "NEXT_PUBLIC_VERSION=$VERSION" > client/.env.production
+          echo "NEXT_PUBLIC_LAST_UPDATE=$DATE" >> client/.env.production
+          echo "NEXT_PUBLIC_API_BASE_URL=http://localhost:$BACKEND_CONTAINER_PORT" >> client/.env.production
         env:
-          NEXT_PUBLIC_VERSION: $VERSION
-          NEXT_PUBLIC_LAST_UPDATE: $DATE
+          VERSION: $VERSION
+          DATE: $DATE
 
       - name: Login to Amazon ECR
         id: login-ecr
@@ -143,8 +146,6 @@ jobs:
             ${{ env.FRONTEND_IMAGE_LATEST }}
           cache-from: type=registry,ref=${{ env.FRONTEND_IMAGE_LATEST }}
           cache-to: type=inline,mode=min
-          build-args: |
-            API_BASE_URL=http://localhost:${{ env.BACKEND_CONTAINER_PORT }}
 
       - name: Build batch image ${{ env.BATCH_WORKER_IMAGE }}
         # id: build-batch-image
