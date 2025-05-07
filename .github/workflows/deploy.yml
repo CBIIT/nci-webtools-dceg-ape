@@ -94,24 +94,7 @@ jobs:
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v1
 
-      # - name: Pull Docker images for build cache
-      #   run: |
-      #     docker pull $FRONTEND_IMAGE_LATEST || true
-      #     docker pull $BACKEND_IMAGE_LATEST || true
-      #     docker pull $BATCH_WORKER_IMAGE_LATEST || true
-
       - name: Build backend image ${{ env.BACKEND_IMAGE }}
-        # id: build-backend-image
-        # run: |
-        #   docker build \
-        #     --cache-from $BACKEND_IMAGE_LATEST \
-        #     -t $BACKEND_IMAGE \
-        #     -t $BACKEND_IMAGE_LATEST \
-        #     -f docker/backend.dockerfile \
-        #     ./
-
-        #   docker push $BACKEND_IMAGE
-        #   docker push $BACKEND_IMAGE_LATEST
         uses: docker/build-push-action@v6
         with:
           context: .
@@ -124,18 +107,6 @@ jobs:
           cache-to: type=inline,mode=min
 
       - name: Build frontend image ${{ env.FRONTEND_IMAGE }}
-        # id: build-frontend-image
-        # run: |
-        #   docker build \
-        #     --cache-from $FRONTEND_IMAGE_LATEST \
-        #     -t $FRONTEND_IMAGE \
-        #     -t $FRONTEND_IMAGE_LATEST \
-        #     --build-arg API_BASE_URL=http://localhost:$BACKEND_CONTAINER_PORT \
-        #     -f docker/frontend.dockerfile \
-        #     ./
-
-        #    docker push $FRONTEND_IMAGE
-        #    docker push $FRONTEND_IMAGE_LATEST
         uses: docker/build-push-action@v6
         with:
           context: .
@@ -148,17 +119,6 @@ jobs:
           cache-to: type=inline,mode=min
 
       - name: Build batch image ${{ env.BATCH_WORKER_IMAGE }}
-        # id: build-batch-image
-        # run: |
-        #   docker build \
-        #     --cache-from $BATCH_WORKER_IMAGE_LATEST \
-        #     -t $BATCH_WORKER_IMAGE \
-        #     -t $BATCH_WORKER_IMAGE_LATEST \
-        #     -f docker/batch-gpu-worker.dockerfile \
-        #     ./
-
-        #    docker push $BATCH_WORKER_IMAGE
-        #    docker push $BATCH_WORKER_IMAGE_LATEST
         uses: docker/build-push-action@v6
         with:
           context: .
