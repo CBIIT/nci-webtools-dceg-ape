@@ -17,11 +17,10 @@ COPY worker/requirements.txt ./
 
 RUN pip3.12 install -r requirements.txt
 
-# COPY worker/package.json app/package-lock.json ./
+COPY worker/package.json worker/package-lock.json ./
 
-# RUN npm install
+RUN npm install
 
 COPY worker ./
 
-CMD sleep infinity
-# CMD node app.js 0
+CMD node app.js 0
