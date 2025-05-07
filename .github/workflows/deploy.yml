@@ -182,6 +182,8 @@ jobs:
             EMAIL_ADMIN=/analysistools/${{ env.TIER }}/${{ env.APP }}/email_admin
             EMAIL_SMTP_HOST=/analysistools/${{ env.TIER }}/${{ env.APP }}/email_smtp_host
             EMAIL_SMTP_PORT=/analysistools/${{ env.TIER }}/${{ env.APP }}/email_smtp_port
+            BATCH_JOB_DEFINITION=/analysistools/${{ env.TIER }}/${{ env.APP }}/batch_job_definition
+            BATCH_JOB_QUEUE=/analysistools/${{ env.TIER }}/${{ env.APP }}/batch_job_queue
           log-configuration-log-driver: awsfirelens
           log-configuration-options: |
             Name=datadog
