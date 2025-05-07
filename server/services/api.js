@@ -13,7 +13,7 @@ export function createApi(env) {
   // define middleware
   const storage = new DiskStorage({
     filename: (req, file) => file.originalname,
-    destination: (req) => path.resolve(env.INPUT_FOLDER, req.params.id),
+    destination: (req) => path.resolve(env.INPUT_FOLDER, req.params.id, 'ct'),
   });
   const upload = multer({ storage });
   const validate = check("id").isUUID();

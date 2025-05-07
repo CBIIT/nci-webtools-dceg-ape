@@ -17,7 +17,6 @@ export async function submit(params, env = process.env) {
   const status = { id, status: "SUBMITTED", submittedAt: new Date() };
 
   await writeJson(paramsFilePath, params);
-
   await writeJson(statusFilePath, status);
 
   worker(id).catch(console.error);

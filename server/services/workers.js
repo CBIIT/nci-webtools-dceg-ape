@@ -33,11 +33,12 @@ export async function runLocalWorker(id, env = process.env) {
 
 async function submitBatch(id, env = process.env) {
   const { BATCH_JOB_QUEUE, BATCH_JOB_DEFINITION } = process.env;
+  const logger = createLogger(env.APP_NAME, env.LOG_LEVEL);
   const client = new BatchClient();
   const workerCommand = ["node", "app.js", id];
   const jobCommand = new SubmitJobCommand({
     // SubmitJobRequest
-    jobName: `ape-batch-${id}`,
+    jobName: `ape-worker-${id}`,
     jobQueue: BATCH_JOB_QUEUE,
     jobDefinition: BATCH_JOB_DEFINITION,
     containerOverrides: {
@@ -46,8 +47,8 @@ async function submitBatch(id, env = process.env) {
     propagateTags: true,
   });
   const command = await client.send(jobCommand);
-  //   logger.info(`Submitted Batch SubmitJob command. Deploy ID: ${deployId}`);
-  //   logger.debug(workerCommand);
-  //   logger.debug(command);
+  logger.info(`Submitted Batch SubmitJob command. Deploy ID: ${id}`);
+  logger.debug(workerCommand);
+  logger.debug(command);
   return command.jobName;
 }

@@ -91,6 +91,12 @@ jobs:
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v1
 
+      - name: Pull Docker images for build cache
+        run: |
+          docker pull $FRONTEND_IMAGE_LATEST || true
+          docker pull $BACKEND_IMAGE_LATEST || true
+          docker pull $BATCH_WORKER_IMAGE_LATEST || true        
+
       - name: Build backend image ${{ env.BACKEND_IMAGE }}
         id: build-backend-image
         run: |
@@ -163,7 +169,7 @@ jobs:
             APP_NAME=${{ env.APP }}
             APP_PORT=${{ env.BACKEND_CONTAINER_PORT }}
             APP_TIER=${{ env.TIER }}
-            WORKER_TYPE=fargate
+            WORKER_TYPE=batch
             TZ=${{ env.TZ }}
           secrets: |
             APP_BASE_URL=/analysistools/${{ env.TIER }}/${{ env.APP }}/base_url
@@ -221,7 +227,7 @@ jobs:
           cluster: ${{ env.ECS_CLUSTER }}
           desired-count: 1
           force-new-deployment: true
-          propagate-tags: SERVICE
+          propagate-tags: true
 
       - name: substitute batch job definition variables
         id: substitute-batch-job-definition
