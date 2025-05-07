@@ -118,6 +118,9 @@ jobs:
           cache-from: type=registry,ref=${{ env.FRONTEND_IMAGE_LATEST }}
           cache-to: type=inline,mode=min
 
+      - name: Cleanup docker images
+        run: docker system prune -af
+
       - name: Build batch image ${{ env.BATCH_WORKER_IMAGE }}
         uses: docker/build-push-action@v6
         with:
@@ -127,8 +130,8 @@ jobs:
           tags: |
             ${{ env.BATCH_WORKER_IMAGE }}
             ${{ env.BATCH_WORKER_IMAGE_LATEST }}
-          # cache-from: type=registry,ref=${{ env.BATCH_WORKER_IMAGE_LATEST }}
-          # cache-to: type=inline,mode=min
+          cache-from: type=registry,ref=${{ env.BATCH_WORKER_IMAGE_LATEST }}
+          cache-to: type=inline,mode=min
 
       - name: render task definition for frontend
         id: render-frontend
