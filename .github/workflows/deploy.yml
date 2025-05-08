@@ -32,7 +32,7 @@ jobs:
       BATCH_INSTANCE_TYPE: g6.xlarge
       BATCH_CPU_UNITS: 4
       BATCH_GPU_UNITS: 1
-      BATCH_MEMORY_UNITS: 16
+      BATCH_MEMORY_UNITS: 7500
       LAUNCH_TEMPLATE_NAME: batch-increase-container-volume-encrypt
     steps:
       - uses: "actions/checkout@v4"
