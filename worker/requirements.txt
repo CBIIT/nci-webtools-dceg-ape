@@ -1,4 +1,4 @@
 TotalSegmentator
 rt_utils
 opencv-python-headless
-
+torch==2.5.1

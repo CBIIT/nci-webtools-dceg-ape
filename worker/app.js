@@ -24,52 +24,49 @@ try {
 }
 
 async function run(jobId, env = process.env) {
+  logger.info(`Running job ${jobId}`);
   const start = new Date();
   const inputFolder = resolve(env.INPUT_FOLDER, jobId);
   const outputFolder = resolve(env.OUTPUT_FOLDER, jobId);
-  logger.info(`Running job ${jobId}`);
   const command = "TotalSegmentator";
-  const args = ["-i", join(inputFolder, "ct"), "-o", join(outputFolder, "AUTOSEG"), "-ot", "dicom", "--fast"];
-  logger.debug(command + " " + args.join(" "));
-  // const { stdout, stderr } = await execFileAsync(command, args, { env });
-  // if (stdout) {
-  //   logger.info(stdout);
-  // }
-  // if (stderr) {
-  //   logger.error(stderr);
-  // }
+  const args = ["-i", join(inputFolder, "ct"), "-o", join(outputFolder, "AUTOSEG"), "-ot", "dicom"];
+  logger.debug(`Command: ${command} ${args.join(" ")}`);
 
   try {
     const process = spawn(command, args, { env });
-    let timeout = setTimeout(() => {
-      logger.error("Process timed out after 10 seconds");
-      process.kill(); // Kill the process
-    }, 10000); // 10 seconds timeout
-
+    // let timeout = setTimeout(() => {
+    //   logger.error("Process timed out after 5 minutes");
+    //   process.kill(1); // Kill the process
+    // }, 5 * 60000); // 5 minute timeout
+    const resetTimeout = (timeout) => {
+      clearTimeout(timeout);
+      timeout = setTimeout(() => {
+        logger.error("Process timed out after 5 minutes");
+        process.kill(1);
+      }, 5 * 60000);
+    };
     process.stdout.on("data", (data) => {
       logger.info(data.toString());
-      timeout = setTimeout(() => {
-        logger.error("Process timed out after 10 seconds");
-        process.kill();
-      }, 10000);
+      // resetTimeout(timeout);
     });
 
     process.stderr.on("data", (data) => {
-      if (data) logger.error(data.toString());
+      logger.error(data.toString());
+      // resetTimeout(timeout);
     });
 
+    // await new Promise((resolve, reject) => {
     process.on("close", (code) => {
-      logger.info(`Process exited with code ${code}`);
+      // clearTimeout(timeout);
+      if (code === 0) {
+        // resolve();
+        logger.info("TotalSegmentator Complete");
+      } else {
+        // reject(new Error(`Process exited with code ${code}`));
+        logger.error(`Process exited with code ${code}`)
+      }
     });
-    await new Promise((resolve, reject) => {
-      process.on("close", (code) => {
-        if (code === 0) {
-          resolve();
-        } else {
-          reject(new Error(`Process exited with code ${code}`));
-        }
-      });
-    });
+    // });
   } catch (error) {
     logger.error("An error occurred");
     logger.error(error);
@@ -82,6 +79,7 @@ async function run(jobId, env = process.env) {
       submittedAt: start,
       completedAt: new Date(),
     };
+    await writeFile(statusFilePath, JSON.stringify(status, null, 2));
     await setTimeout(10000);
   }
 }
