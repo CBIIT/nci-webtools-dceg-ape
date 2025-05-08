@@ -7,6 +7,8 @@ RUN dnf -y update \
     python3.12-devel \
     python3.12-pip \
     nodejs \
+    libcusparselt0 \
+    libcusparselt-devel \
     && dnf clean all
 
 RUN mkdir -p /input /output /tmp /data /app
