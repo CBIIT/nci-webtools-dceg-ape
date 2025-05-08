@@ -1,11 +1,11 @@
 import { createReadStream, createWriteStream, existsSync } from "fs";
 import { writeFile, readdir, mkdir } from "fs/promises";
 import { join, resolve, relative, normalize } from "path";
-import { execFile, spawn } from "child_process";
+import { spawn, exec } from "child_process";
 import { promisify } from "util";
 import { createLogger } from "./logger.js";
 
-const execFileAsync = promisify(execFile);
+const execAsync = promisify(exec);
 
 const [jobId] = process.argv.slice(2);
 const logger = createLogger(`Job ${jobId}`, process.env?.LOG_LEVEL || "debug");
@@ -24,64 +24,66 @@ try {
 }
 
 async function run(jobId, env = process.env) {
+  logger.info(`Running job ${jobId}`);
   const start = new Date();
   const inputFolder = resolve(env.INPUT_FOLDER, jobId);
   const outputFolder = resolve(env.OUTPUT_FOLDER, jobId);
-  logger.info(`Running job ${jobId}`);
+  const statusFilePath = join(outputFolder, "status.json");
   const command = "TotalSegmentator";
-  const args = ["-i", join(inputFolder, "ct"), "-o", join(outputFolder, "AUTOSEG"), "-ot", "dicom", "--fast"];
-  logger.debug(command + " " + args.join(" "));
-  // const { stdout, stderr } = await execFileAsync(command, args, { env });
-  // if (stdout) {
-  //   logger.info(stdout);
-  // }
-  // if (stderr) {
-  //   logger.error(stderr);
-  // }
+  const args = ["-i", join(inputFolder, "ct"), "-o", join(outputFolder, "AUTOSEG"), "-ot", "dicom"];
+  logger.debug(`Command: ${command} ${args.join(" ")}`);
 
   try {
-    const process = spawn(command, args, { env });
-    let timeout = setTimeout(() => {
-      logger.error("Process timed out after 10 seconds");
-      process.kill(); // Kill the process
-    }, 10000); // 10 seconds timeout
-
-    process.stdout.on("data", (data) => {
-      logger.info(data.toString());
-      timeout = setTimeout(() => {
-        logger.error("Process timed out after 10 seconds");
-        process.kill();
-      }, 10000);
-    });
-
-    process.stderr.on("data", (data) => {
-      if (data) logger.error(data.toString());
-    });
-
-    process.on("close", (code) => {
-      logger.info(`Process exited with code ${code}`);
-    });
-    await new Promise((resolve, reject) => {
-      process.on("close", (code) => {
-        if (code === 0) {
-          resolve();
-        } else {
-          reject(new Error(`Process exited with code ${code}`));
-        }
-      });
-    });
+    const { error, stdout, stderr } = await execAsync(`${command} ${args.join(" ")}`);
+    logger.debug("stdout");
+    logger.debug(stdout);
+    logger.debug("stderr");
+    logger.debug(stderr);
+    if (error) {
+      throw error;
+    }
+    // const process = spawn(command, args, { env });
+    // process.stdout.on("data", (data) => {
+    //   logger.info(data.toString());
+    // });
+    // process.stderr.on("data", (data) => {
+    //   logger.error(data.toString());
+    // });
+    // await new Promise((resolve, reject) => {
+    //   process.on("close", (code, signal) => {
+    //     if (signal) {
+    //       logger.error(`Process was terminated by signal: ${signal}`);
+    //       reject(new Error(`Process terminated by signal: ${signal}`));
+    //     } else if (code === 0) {
+    //       logger.info("TotalSegmentator Complete");
+    //       resolve();
+    //     } else {
+    //       reject(new Error(`Process exited with code ${code}`));
+    //     }
+    //   });
+    //   process.on("error", (error) => {
+    //     reject(error);
+    //   });
+    // });
   } catch (error) {
     logger.error("An error occurred");
     logger.error(error);
+    const status = {
+      id: jobId,
+      status: "FAILED",
+      submittedAt: start,
+      completedAt: new Date(),
+    };
+    await writeFile(statusFilePath, JSON.stringify(status, null, 2));
   } finally {
     logger.info("Job completed");
-    const statusFilePath = join(outputFolder, "status.json");
     const status = {
       id: jobId,
       status: "COMPLETED",
       submittedAt: start,
       completedAt: new Date(),
     };
-    await setTimeout(10000);
+    await writeFile(statusFilePath, JSON.stringify(status, null, 2));
+    setTimeout(10000);
   }
 }

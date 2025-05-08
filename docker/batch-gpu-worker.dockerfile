@@ -7,6 +7,9 @@ RUN dnf -y update \
     python3.12-devel \
     python3.12-pip \
     nodejs \
+    libcusparselt0 \ 
+    libcusparselt-devel \
+    cuda-toolkit-12-8 \
     && dnf clean all
 
 RUN mkdir -p /input /output /tmp /data /app
@@ -15,7 +18,7 @@ WORKDIR /app
 
 COPY worker/requirements.txt ./
 
-RUN pip3.12 install -r requirements.txt
+RUN pip3.12 install -r requirements.txt --extra-index-url https://download.pytorch.org/whl/cu128
 
 COPY worker/package.json worker/package-lock.json ./
 
