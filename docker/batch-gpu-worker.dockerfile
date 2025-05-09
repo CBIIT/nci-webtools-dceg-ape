@@ -4,8 +4,8 @@ RUN dnf -y update \
     && dnf -y install \
     gcc-c++ \
     mesa-libGL \
-    python3.12-devel \
-    python3.12-pip \
+    python3-devel \
+    python3-pip \
     nodejs \
     libcusparselt0 \ 
     libcusparselt-devel \
@@ -18,8 +18,8 @@ WORKDIR /app
 
 COPY worker/requirements.txt ./
 
-RUN pip3.12 install torch==2.6.0 torchvision==0.21.0 --index-url https://download.pytorch.org/whl/cu124
-RUN pip3.12 install -r requirements.txt
+RUN pip3 install torch==2.6.0 torchvision==0.21.0 --index-url https://download.pytorch.org/whl/cu124
+RUN pip3 install -r requirements.txt
 
 COPY worker/package.json worker/package-lock.json ./
 
