@@ -18,6 +18,7 @@ WORKDIR /app
 
 COPY worker/requirements.txt ./
 
+RUN pip3.12 install torch==2.6.0 torchvision==0.21.0 --index-url https://download.pytorch.org/whl/cu124
 RUN pip3.12 install -r requirements.txt
 
 COPY worker/package.json worker/package-lock.json ./
