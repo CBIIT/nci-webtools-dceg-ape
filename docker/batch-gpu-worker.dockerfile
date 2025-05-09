@@ -1,4 +1,4 @@
-FROM nvidia/cuda:12.6.3-cudnn-runtime-rockylinux9
+FROM nvidia/cuda:12.4.1-cudnn-runtime-rockylinux9
 
 RUN dnf -y update \
     && dnf -y install \
@@ -9,7 +9,7 @@ RUN dnf -y update \
     nodejs \
     libcusparselt0 \ 
     libcusparselt-devel \
-    cuda-toolkit-12-6 \
+    cuda-toolkit-12-4 \
     && dnf clean all
 
 RUN mkdir -p /input /output /tmp /data /app
