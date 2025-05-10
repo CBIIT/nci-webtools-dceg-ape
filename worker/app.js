@@ -34,37 +34,37 @@ async function run(jobId, env = process.env) {
   logger.debug(`Command: ${command} ${args.join(" ")}`);
 
   try {
-    const { error, stdout, stderr } = await execAsync(`${command} ${args.join(" ")}`);
-    logger.debug("stdout");
-    logger.debug(stdout);
-    logger.debug("stderr");
-    logger.debug(stderr);
-    if (error) {
-      throw error;
-    }
-    // const process = spawn(command, args, { env });
-    // process.stdout.on("data", (data) => {
-    //   logger.info(data.toString());
-    // });
-    // process.stderr.on("data", (data) => {
-    //   logger.error(data.toString());
-    // });
-    // await new Promise((resolve, reject) => {
-    //   process.on("close", (code, signal) => {
-    //     if (signal) {
-    //       logger.error(`Process was terminated by signal: ${signal}`);
-    //       reject(new Error(`Process terminated by signal: ${signal}`));
-    //     } else if (code === 0) {
-    //       logger.info("TotalSegmentator Complete");
-    //       resolve();
-    //     } else {
-    //       reject(new Error(`Process exited with code ${code}`));
-    //     }
-    //   });
-    //   process.on("error", (error) => {
-    //     reject(error);
-    //   });
-    // });
+    // const { error, stdout, stderr } = await execAsync(`${command} ${args.join(" ")}`);
+    // logger.debug("stdout");
+    // logger.debug(stdout);
+    // logger.debug("stderr");
+    // logger.debug(stderr);
+    // if (error) {
+    //   throw error;
+    // }
+    const process = spawn(command, args, { env });
+    process.stdout.on("data", (data) => {
+      logger.info(data.toString());
+    });
+    process.stderr.on("data", (data) => {
+      logger.error(data.toString());
+    });
+    await new Promise((resolve, reject) => {
+      process.on("close", (code, signal) => {
+        if (signal) {
+          logger.error(`Process was terminated by signal: ${signal}`);
+          reject(new Error(`Process terminated by signal: ${signal}`));
+        } else if (code === 0) {
+          logger.info("TotalSegmentator Complete");
+          resolve();
+        } else {
+          reject(new Error(`Process exited with code ${code}`));
+        }
+      });
+      process.on("error", (error) => {
+        reject(error);
+      });
+    });
   } catch (error) {
     logger.error("An error occurred");
     logger.error(error);
@@ -84,6 +84,6 @@ async function run(jobId, env = process.env) {
       completedAt: new Date(),
     };
     await writeFile(statusFilePath, JSON.stringify(status, null, 2));
-    setTimeout(10000);
+    setTimeout(() => {}, 10000);
   }
 }
