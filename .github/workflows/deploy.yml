@@ -29,6 +29,7 @@ jobs:
       FRONTEND_CONTAINER_PORT: 80
       BACKEND_CONTAINER_PORT: 9000
       TIER: ${{ (endsWith(github.ref, '_dev') && 'dev') || (endsWith(github.ref, '_qa') && 'qa') || 'dev' }}
+      IMAGE_TIER: ${{ (endsWith(github.ref, '_dev') || endsWith(github.ref, '_qa')) && 'development' || 'release' }}
       BATCH_INSTANCE_TYPE: g6.xlarge
       BATCH_CPU_UNITS: 4
       BATCH_GPU_UNITS: 1
@@ -67,12 +68,12 @@ jobs:
           TIMESTAMP=$(date +"%Y%m%d%H%M%S")
           REPO=${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.$AWS_REGION.amazonaws.com/$APP
           echo "IMAGE_REPOSITORY=$REPO" >> $GITHUB_ENV
-          echo "FRONTEND_IMAGE=$REPO:$TIER-frontend-${{ github.ref_name }}-$TIMESTAMP" >> $GITHUB_ENV
-          echo "BACKEND_IMAGE=$REPO:$TIER-backend-${{ github.ref_name }}-$TIMESTAMP" >> $GITHUB_ENV
-          echo "BATCH_WORKER_IMAGE=$REPO:$TIER-batch-worker-${{ github.ref_name }}-$TIMESTAMP" >> $GITHUB_ENV
-          echo "FRONTEND_IMAGE_LATEST=$REPO:$TIER-frontend-${{ github.ref_name }}-latest" >> $GITHUB_ENV
-          echo "BACKEND_IMAGE_LATEST=$REPO:$TIER-backend-${{ github.ref_name }}-latest" >> $GITHUB_ENV
-          echo "BATCH_WORKER_IMAGE_LATEST=$REPO:$TIER-batch-worker-${{ github.ref_name }}-latest" >> $GITHUB_ENV
+          echo "FRONTEND_IMAGE=$REPO:$IMAGE_TIER-frontend-${{ github.ref_name }}-$TIMESTAMP" >> $GITHUB_ENV
+          echo "BACKEND_IMAGE=$REPO:$IMAGE_TIER-backend-${{ github.ref_name }}-$TIMESTAMP" >> $GITHUB_ENV
+          echo "BATCH_WORKER_IMAGE=$REPO:$IMAGE_TIER-batch-worker-${{ github.ref_name }}-$TIMESTAMP" >> $GITHUB_ENV
+          echo "FRONTEND_IMAGE_LATEST=$REPO:$IMAGE_TIER-frontend-${{ github.ref_name }}-latest" >> $GITHUB_ENV
+          echo "BACKEND_IMAGE_LATEST=$REPO:$IMAGE_TIER-backend-${{ github.ref_name }}-latest" >> $GITHUB_ENV
+          echo "BATCH_WORKER_IMAGE_LATEST=$REPO:$IMAGE_TIER-batch-worker-${{ github.ref_name }}-latest" >> $GITHUB_ENV
           echo "PARAMETER_PATH=/analysistools/${TIER}/${APP}" >> $GITHUB_ENV
           echo "ENVIRONMENT_TIER=${TIER^^}" >> $GITHUB_ENV
 
@@ -106,6 +107,13 @@ jobs:
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v1
 
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Create and use a new builder instance
+        run: |
+          docker buildx create --name mybuilder --use
+
       - name: Build backend image ${{ env.BACKEND_IMAGE }}
         uses: docker/build-push-action@v6
         with:
@@ -115,8 +123,8 @@ jobs:
           tags: |
             ${{ env.BACKEND_IMAGE }}
             ${{ env.BACKEND_IMAGE_LATEST }}
-          cache-from: type=registry,ref=${{ env.BACKEND_IMAGE_LATEST }}
-          cache-to: type=inline,mode=min
+          cache-from: type=registry,ref=${{ env.IMAGE_REPOSITORY }}:backend-cache
+          cache-to: type=registry,ref=${{ env.IMAGE_REPOSITORY }}:backend-cache,image-manifest=true,oci-mediatypes=true,mode=max
 
       - name: Build frontend image ${{ env.FRONTEND_IMAGE }}
         uses: docker/build-push-action@v6
@@ -127,8 +135,8 @@ jobs:
           tags: |
             ${{ env.FRONTEND_IMAGE }}
             ${{ env.FRONTEND_IMAGE_LATEST }}
-          cache-from: type=registry,ref=${{ env.FRONTEND_IMAGE_LATEST }}
-          cache-to: type=inline,mode=min
+          cache-from: type=registry,ref=${{ env.IMAGE_REPOSITORY }}:frontend-cache
+          cache-to: type=registry,ref=${{ env.IMAGE_REPOSITORY }}:frontend-cache,image-manifest=true,oci-mediatypes=true,mode=max
 
       - name: Build batch image ${{ env.BATCH_WORKER_IMAGE }}
         uses: docker/build-push-action@v6
@@ -139,8 +147,8 @@ jobs:
           tags: |
             ${{ env.BATCH_WORKER_IMAGE }}
             ${{ env.BATCH_WORKER_IMAGE_LATEST }}
-          cache-from: type=registry,ref=${{ env.BATCH_WORKER_IMAGE_LATEST }}
-          cache-to: type=inline,mode=min
+          cache-from: type=registry,ref=${{ env.IMAGE_REPOSITORY }}:batch-cache
+          cache-to: type=registry,ref=${{ env.IMAGE_REPOSITORY }}:batch-cache,image-manifest=true,oci-mediatypes=true,mode=max
 
       - name: render task definition for frontend
         id: render-frontend
