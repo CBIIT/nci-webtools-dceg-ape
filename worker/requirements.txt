@@ -1,4 +1,7 @@
-TotalSegmentator
-rt_utils
-opencv-python-headless
-
+torch==2.7.0
+opencv-python-headless==4.11.0.86
+blosc2==2.5.1
+pydicom==2.4.4
+rt_utils==1.2.7
+dicom2nifti==2.5.1
+TotalSegmentator==2.8.0
