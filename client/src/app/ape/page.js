@@ -6,6 +6,8 @@ import { useQuery, useMutation, useQueryClient, useIsMutating } from "@tanstack/
 import { v4 as uuidv4 } from "uuid";
 import { useRouter, usePathname } from "next/navigation";
 import { submit, upload } from "@/services/queries";
+import * as dicomParser from "dicom-parser";
+
 
 export default function ApePage() {
   const queryClient = useQueryClient();
@@ -14,8 +16,10 @@ export default function ApePage() {
     handleSubmit,
     watch,
     reset,
+    setValue,
     formState: { errors },
   } = useForm();
+
 
   const submitForm = useMutation({
     mutationKey: "submit",
@@ -66,6 +70,39 @@ export default function ApePage() {
   function onReset(event) {
     event.preventDefault();
     reset();
+  }
+
+  async function handleFileChange(event) {
+    const files = Array.from(event.target.files || []);
+    if (!files.length) return;
+
+    const firstFile = files[0];
+    try {
+      const arrayBuffer = await firstFile.arrayBuffer();
+      const byteArray = new Uint8Array(arrayBuffer);
+      const dataSet = dicomParser.parseDicom(byteArray);
+
+      // ✅ Log all tags and their values
+    console.log("🔍 DICOM Metadata:");
+    for (const tag in dataSet.elements) {
+      const element = dataSet.elements[tag];
+      const value = dataSet.string(tag);
+      console.log(`${tag} → ${value}`);
+    }
+
+      const sex = dataSet.string('x00100040'); // PatientSex
+      const ageStr = dataSet.string('x00101010'); // e.g., "034Y"
+      const heightStr = dataSet.string('x00101020'); // in meters
+      const weightStr = dataSet.string('x00101030'); // in kg
+
+      if (sex) setValue("sex", ["M", "F"].includes(sex) ? sex : "NA");
+      if (ageStr) setValue("age", parseInt(ageStr));
+      if (heightStr) setValue("height", parseFloat(heightStr) * 100); // meters to cm
+      if (weightStr) setValue("weight", parseFloat(weightStr));
+    } catch (err) {
+      console.error("Failed to read DICOM metadata", err);
+      setFormError("Could not extract metadata from the DICOM file.");
+    }
   }
 
   return (
@@ -174,6 +211,7 @@ export default function ApePage() {
                     accept=".dcm,.nii,nii.gz"
                     isInvalid={errors?.files}
                     // disabled={formState.status}
+                    onChange={handleFileChange}
                   />
                   <Form.Text className="text-muted d-block">Upload a Nifti file or several DICOM files</Form.Text>
                   <Form.Control.Feedback className="d-block" type="invalid">
