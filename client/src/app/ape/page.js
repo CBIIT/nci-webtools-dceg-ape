@@ -143,7 +143,7 @@ export default function ApePage() {
                   />
                   <Form.Text className="text-danger">{errors?.age?.message}</Form.Text>
                 </Form.Group>
-                <Form.Group controlId="height" className="my-3">
+                {/* <Form.Group controlId="height" className="my-3">
                   <Form.Label className="fw-bold">Height (cm)</Form.Label>
                   <Form.Control
                     {...register("height", {
@@ -157,7 +157,21 @@ export default function ApePage() {
                     onWheel={numberInputOnWheelPreventChange}
                   />
                   <Form.Text className="text-danger">{errors?.height?.message}</Form.Text>
+                </Form.Group> */}
+                <Form.Group controlId="height" className="my-3">
+                  <Form.Label className="fw-bold">Height</Form.Label>
+                  <div className="d-flex gap-2">
+                    <Form.Select {...register("height_ft", { required: true })} defaultValue="">
+                      <option value="">ft</option>
+                      {[...Array(8).keys()].map(i => <option key={i}>{i}</option>)}
+                    </Form.Select>
+                    <Form.Select {...register("height_in", { required: true })} defaultValue="">
+                      <option value="">in</option>
+                      {[...Array(12).keys()].map(i => <option key={i}>{i}</option>)}
+                    </Form.Select>
+                  </div>
                 </Form.Group>
+
                 <Form.Group controlId="weight" className="my-3">
                   <Form.Label className="fw-bold">Weight (kg)</Form.Label>
                   <Form.Control
