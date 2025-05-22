@@ -95,13 +95,13 @@ export default function ApePage() {
       const heightStr = dataSet.string('x00101020'); // in meters
       const weightStr = dataSet.string('x00101030'); // in kg
       const sliceThicknessStr = dataSet.string('x00180050'); // in mm 
-      const kvpStr = dataSet.string('x00181060'); // in kVp
+      const kvpStr = dataSet.string('x00180060'); // in kVp
 
       if (sex) setValue("sex", ["M", "F"].includes(sex) ? sex : "NA");
       if (ageStr) setValue("age", parseInt(ageStr));
       if (heightStr) setValue("height", parseFloat(heightStr) * 100); // meters to cm
       if (weightStr) setValue("weight", parseFloat(weightStr));
-      if (sliceThicknessStr) setValue("sliceThickness", parseFloat(sliceThicknessStr));
+      if (sliceThicknessStr) setValue("thickness", parseFloat(sliceThicknessStr));
       if (kvpStr) setValue("kvp", parseFloat(kvpStr));
     } catch (err) {
       console.error("Failed to read DICOM metadata", err);
