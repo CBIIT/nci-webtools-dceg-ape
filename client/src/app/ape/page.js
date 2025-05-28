@@ -20,6 +20,8 @@ export default function ApePage() {
     formState: { errors },
   } = useForm();
 
+  const router = useRouter();
+
 
   const submitForm = useMutation({
     mutationKey: "submit",
@@ -43,7 +45,7 @@ export default function ApePage() {
   }
 
   async function onSubmit(formData) {
-    console.log(formData);
+    console.log("Mock form data: ", formData);
     setFormError(null);
     const id = uuidv4();
 
@@ -60,7 +62,10 @@ export default function ApePage() {
         setProgress(Math.round((filesUploaded * 100) / formData.files.length));
         setProgressLabel(`Uploaded ${filesUploaded} of ${formData.files.length} files`);
       }
-      await submitForm.mutateAsync({ params: { id, ...formData } });
+      //await submitForm.mutateAsync({ params: { id, ...formData } });
+
+    // Redirect to results page
+    router.push(`/results/${id}`);
     } catch (error) {
       console.error("Error uploading files:", error);
       setFormError(error.response?.data?.message || error.message || "An unknown error occurred.");
@@ -82,8 +87,8 @@ export default function ApePage() {
       const byteArray = new Uint8Array(arrayBuffer);
       const dataSet = dicomParser.parseDicom(byteArray);
 
-      // ✅ Log all tags and their values
-    console.log("🔍 DICOM Metadata:");
+      // Log all tags and their values
+    console.log("DICOM Metadata:");
     for (const tag in dataSet.elements) {
       const element = dataSet.elements[tag];
       const value = dataSet.string(tag);
@@ -99,7 +104,10 @@ export default function ApePage() {
 
       if (sex) setValue("sex", ["M", "F"].includes(sex) ? sex : "NA");
       if (ageStr) setValue("age", parseInt(ageStr));
-      if (heightStr) setValue("height", parseFloat(heightStr) * 100); // meters to cm
+      if (heightStr) {
+        const heightCm = parseFloat(heightStr) * 100;
+        if (!isNaN(heightCm)) setValue("height", heightCm);
+      }
       if (weightStr) setValue("weight", parseFloat(weightStr));
       if (sliceThicknessStr) setValue("thickness", parseFloat(sliceThicknessStr));
       if (kvpStr) setValue("kvp", parseFloat(kvpStr));
@@ -143,7 +151,7 @@ export default function ApePage() {
                   />
                   <Form.Text className="text-danger">{errors?.age?.message}</Form.Text>
                 </Form.Group>
-                {/* <Form.Group controlId="height" className="my-3">
+                <Form.Group controlId="height" className="my-3">
                   <Form.Label className="fw-bold">Height (cm)</Form.Label>
                   <Form.Control
                     {...register("height", {
@@ -157,8 +165,8 @@ export default function ApePage() {
                     onWheel={numberInputOnWheelPreventChange}
                   />
                   <Form.Text className="text-danger">{errors?.height?.message}</Form.Text>
-                </Form.Group> */}
-                <Form.Group controlId="height" className="my-3">
+                </Form.Group>
+                {/* <Form.Group controlId="height" className="my-3">
                   <Form.Label className="fw-bold">Height</Form.Label>
                   <div className="d-flex gap-2">
                     <Form.Select {...register("height_ft", { required: true })} defaultValue="">
@@ -170,7 +178,7 @@ export default function ApePage() {
                       {[...Array(12).keys()].map(i => <option key={i}>{i}</option>)}
                     </Form.Select>
                   </div>
-                </Form.Group>
+                </Form.Group> */}
 
                 <Form.Group controlId="weight" className="my-3">
                   <Form.Label className="fw-bold">Weight (kg)</Form.Label>
