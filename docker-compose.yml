@@ -5,17 +5,14 @@ services:
       dockerfile: "./docker/backend.dockerfile"
     env_file: server/.env
     ports:
-      - "10000:10000"
+      - "9000:9000"
 
   frontend:
     build:
       context: "."
       dockerfile: "./docker/frontend.dockerfile"
       args:
-        APP_PATH: /
-    environment:
-      API_BASE_URL: http://backend:10000
-      APP_PATH: /
+        NEXT_PUBLIC_API_BASE_URL: http://backend:9000
     ports:
       - "3000:80"
 
@@ -27,7 +24,8 @@ services:
       dockerfile: "./docker/cpu-worker.dockerfile"
     volumes:
       - ./data:/data
-    env_file: worker/.env
+    env_file: server/.env
+    entrypoint: "node app.js 1" 
 
   batch-worker:
     profiles:

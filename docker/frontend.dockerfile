@@ -19,6 +19,8 @@ RUN npm install
 
 COPY client /app/client/
 
+ARG NEXT_PUBLIC_API_BASE_URL=http://localhost:9000
+ENV NEXT_PUBLIC_API_BASE_URL=${NEXT_PUBLIC_API_BASE_URL}
 RUN npm run build 
 
 EXPOSE 80
