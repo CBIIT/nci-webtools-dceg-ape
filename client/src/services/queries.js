@@ -29,3 +29,8 @@ export async function submit(id, params) {
 export async function upload(id, file) {
   return await axios.post(`/api/submit/${id}`, file);
 }
+
+export async function getStatus(id) {
+  const response = await axios.get(`/api/status/${id}`);
+  return response.data;
+}
