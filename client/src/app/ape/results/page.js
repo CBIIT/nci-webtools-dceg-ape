@@ -1,12 +1,14 @@
-// app/results/[id]/page.js
 "use client";
-import { useEffect, useState } from "react";
-import { useParams } from "next/navigation";
-import Status from "@/app/ape/status";
 
+import { useEffect, useState } from "react";
+import { Container } from "react-bootstrap";
+import { useSearchParams } from "next/navigation";
+import Status from "../../../components/status";
 
 export default function ResultsPage() {
-  const { id } = useParams();
+  const searchParams = useSearchParams();
+  const id = searchParams.get("id");
+
   const [status, setStatus] = useState(null);
   const [seerData, setSeerData] = useState(null);
 
@@ -15,8 +17,9 @@ export default function ResultsPage() {
 
     const interval = setInterval(async () => {
       try {
-        const res = await fetch(`/api/status/${id}`);
+        const res = await fetch(`/api/data/output/${id}/status.json`);
         const data = await res.json();
+
         setStatus(data.status);
         setSeerData(data.seerData || null);
 
@@ -24,7 +27,7 @@ export default function ResultsPage() {
           clearInterval(interval);
         }
       } catch (err) {
-        console.error("Failed to fetch status:", err);
+        console.error("Failed to fetch job status:", err);
         clearInterval(interval);
       }
     }, 3000);
@@ -33,19 +36,16 @@ export default function ResultsPage() {
   }, [id]);
 
   return (
-    <div className="container py-4">
-      <h3>Job Status</h3>
+    <div className="flex-grow-1 bg-light py-4">
+      <Container>
+        <h3>Results</h3>
       <div>
         <strong>Job ID:</strong> {id}
       </div>
-      <Status status={status} seerData={seerData} />
 
-      {status?.status === "COMPLETED" && (
-        <div className="mt-4">
-          <h5>Results:</h5>
-          <pre>{JSON.stringify(seerData, null, 2)}</pre>
-        </div>
-      )}
+      <Status status={status} seerData={seerData} />
+      </Container>    
+    
     </div>
   );
 }

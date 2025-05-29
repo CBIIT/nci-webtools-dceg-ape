@@ -12,7 +12,17 @@ function pathsMatch(path1, path2) {
   path1 = path1.replace(/\/$/, "");
   path2 = path2.replace(/\/$/, "");
   const basePath = process.env.NEXT_PUBLIC_BASE_PATH || "";
-  return [path2, basePath + path2].includes(path1);
+  //return [path2, basePath + path2].includes(path1);
+  // Special case for root path
+  if (path2 === "" || path2 === "/") return path1 === "";
+
+  // Match exact or prefix
+  return (
+    path1 === path2 ||
+    path1 === basePath + path2 ||
+    path1.startsWith(path2 + "/") ||
+    path1.startsWith(basePath + path2 + "/")
+  );
 }
 
 export default function AppNavbar({ routes = [] }) {

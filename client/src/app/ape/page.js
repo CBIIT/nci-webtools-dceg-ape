@@ -7,6 +7,7 @@ import { v4 as uuidv4 } from "uuid";
 import { useRouter, usePathname } from "next/navigation";
 import { submit, upload } from "@/services/queries";
 import * as dicomParser from "dicom-parser";
+import axios from "axios";
 
 
 export default function ApePage() {
@@ -56,8 +57,7 @@ export default function ApePage() {
         const fileData = new FormData();
         fileData.append("files", file);
         fileData.append("id", id);
-        // await axios.post(`/api/submit/${id}`, fileData);
-        await upload(id, fileData);
+        //await upload(id, fileData);
         filesUploaded++;
         setProgress(Math.round((filesUploaded * 100) / formData.files.length));
         setProgressLabel(`Uploaded ${filesUploaded} of ${formData.files.length} files`);
@@ -65,7 +65,7 @@ export default function ApePage() {
       //await submitForm.mutateAsync({ params: { id, ...formData } });
 
     // Redirect to results page
-    router.push(`/results/${id}`);
+    router.push(`/ape/results?id=${id}`);
     } catch (error) {
       console.error("Error uploading files:", error);
       setFormError(error.response?.data?.message || error.message || "An unknown error occurred.");
