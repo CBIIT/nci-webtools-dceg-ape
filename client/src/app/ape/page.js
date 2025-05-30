@@ -57,12 +57,12 @@ export default function ApePage() {
         const fileData = new FormData();
         fileData.append("files", file);
         fileData.append("id", id);
-        //await upload(id, fileData);
+        await upload(id, fileData);
         filesUploaded++;
         setProgress(Math.round((filesUploaded * 100) / formData.files.length));
         setProgressLabel(`Uploaded ${filesUploaded} of ${formData.files.length} files`);
       }
-      //await submitForm.mutateAsync({ params: { id, ...formData } });
+      await submitForm.mutateAsync({ params: { id, ...formData } });
 
     // Redirect to results page
     router.push(`/ape/results?id=${id}`);

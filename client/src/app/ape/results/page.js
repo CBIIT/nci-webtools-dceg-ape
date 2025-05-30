@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { Container } from "react-bootstrap";
 import { useSearchParams } from "next/navigation";
 import Status from "../../../components/status";
+import { getStatus } from "@/services/queries";
 
 export default function ResultsPage() {
   const searchParams = useSearchParams();
@@ -15,23 +16,23 @@ export default function ResultsPage() {
   useEffect(() => {
     if (!id) return;
 
-    const interval = setInterval(async () => {
+    const poll = async () => {
       try {
-        const res = await fetch(`/api/data/output/${id}/status.json`);
-        const data = await res.json();
-
-        setStatus(data.status);
+        const data = await getStatus(id); // uses /api/status/:id
+        setStatus(data);                 // contains { status: "...", ... }
         setSeerData(data.seerData || null);
 
-        if (["COMPLETED", "FAILED"].includes(data.status?.status)) {
-          clearInterval(interval);
+        if (["COMPLETED", "FAILED"].includes(data.status)) {
+          clearInterval(interval); // stop polling
         }
       } catch (err) {
         console.error("Failed to fetch job status:", err);
         clearInterval(interval);
       }
-    }, 3000);
+    };
 
+    const interval = setInterval(poll, 3000); // poll every 3 seconds
+    poll(); // trigger once immediately
     return () => clearInterval(interval);
   }, [id]);
 
