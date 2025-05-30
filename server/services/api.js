@@ -50,16 +50,7 @@ export function createApi(env) {
     }
   });
 
-  router.get("/status/:id", validate, handleValidationErrors, async (req, res) => {
-    const statusPath = path.resolve(env.OUTPUT_FOLDER, req.params.id, "status.json");
-    try {
-      const status = await readJson(statusPath);
-      res.json(status);
-    } catch (e) {
-      res.status(404).json({ error: "Status not found" });
-    }
-  });
-
+  
 
 
   router.use(logForbiddenErrors());

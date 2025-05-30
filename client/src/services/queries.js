@@ -31,6 +31,6 @@ export async function upload(id, file) {
 }
 
 export async function getStatus(id) {
-  const response = await axios.get(`/api/status/${id}`);
+  const response = await axios.get(`/api/data/output/${id}/status.json`);
   return response.data;
 }
