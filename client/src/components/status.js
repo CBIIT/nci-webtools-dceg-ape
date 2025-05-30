@@ -25,7 +25,7 @@ export default function Status({  status }) {
           </div>
           <div>
             For further assistance, please contact us at:{" "}
-            <a href="mailto:NCIJPSurvWebAdmin@mail.nih.gov">NCIJPSurvWebAdmin@mail.nih.gov</a>
+            <a href="mailto:NCIAPEWebAdmin@mail.nih.gov">NCIAPEWebAdmin@mail.nih.gov</a>
           </div>
         </Alert>
       )}
