@@ -1,7 +1,7 @@
 import { Spinner, Alert } from "react-bootstrap";
 
-export default function Status({ seerData, status }) {
-  console.log("Status component rendered with:", { seerData, status });
+export default function Status({  status }) {
+  console.log("Status component rendered with:", {  status });
   return (
     <div className="shadow border rounded bg-white p-3">
       <div className="mb-2">
