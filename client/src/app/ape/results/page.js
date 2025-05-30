@@ -5,36 +5,28 @@ import { Container } from "react-bootstrap";
 import { useSearchParams } from "next/navigation";
 import Status from "../../../components/status";
 import { getStatus } from "@/services/queries";
+import { useQuery } from "@tanstack/react-query";
+
 
 export default function ResultsPage() {
   const searchParams = useSearchParams();
   const id = searchParams.get("id");
 
-  const [status, setStatus] = useState(null);
-  const [seerData, setSeerData] = useState(null);
-
-  useEffect(() => {
-    if (!id) return;
-
-    const poll = async () => {
-      try {
-        const data = await getStatus(id); // uses /api/status/:id
-        setStatus(data);                 // contains { status: "...", ... }
-        setSeerData(data.seerData || null);
-
-        if (["COMPLETED", "FAILED"].includes(data.status)) {
-          clearInterval(interval); // stop polling
-        }
-      } catch (err) {
-        console.error("Failed to fetch job status:", err);
-        clearInterval(interval);
-      }
-    };
-
-    const interval = setInterval(poll, 3000); // poll every 3 seconds
-    poll(); // trigger once immediately
-    return () => clearInterval(interval);
-  }, [id]);
+  const {
+    data: status,
+    isLoading,
+    isError,
+  } = useQuery({
+    queryKey: ["status", id],
+    queryFn: () => getStatus(id),
+    enabled: !!id,
+    refetchInterval: (queryData) => {
+      // Only keep polling if the job is still in progress
+      const s = queryData?.status;
+      if (s === "COMPLETED" || s === "FAILED") return false;
+      return 3000; // poll every 3 seconds
+    },
+  });
 
   return (
     <div className="flex-grow-1 bg-light py-4">
@@ -44,7 +36,9 @@ export default function ResultsPage() {
         <strong>Job ID:</strong> {id}
       </div>
 
-      <Status status={status} seerData={seerData} />
+      {isLoading && <div>Checking job status...</div>}
+      {isError && <div>Error fetching job status.</div>}
+      {!isLoading && !isError && <Status status={status} />}
       </Container>    
     
     </div>
