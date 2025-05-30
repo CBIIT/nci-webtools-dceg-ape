@@ -6,6 +6,8 @@ services:
     env_file: server/.env
     ports:
       - "9000:9000"
+    volumes:
+      - ./data:/data
 
   frontend:
     build:
