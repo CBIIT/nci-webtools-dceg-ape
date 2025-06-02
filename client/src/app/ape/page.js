@@ -234,6 +234,7 @@ export default function ApeForm() {
                   <Form.Label className="fw-bold">Email</Form.Label>
                   <Form.Control
                     {...register("email", {
+                      required: "Email is required",
                       pattern: {
                         value: /\S+@\S+\.\S+/,
                         message: "Entered value does not match email format",
