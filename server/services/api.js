@@ -8,6 +8,7 @@ import DiskStorage from "./storage.js";
 import { logRequests, logErrors, logFiles, handleValidationErrors, logForbiddenErrors } from "./middleware.js";
 import { submit } from "../analysis/ape.js";
 import { removePHI } from "./dicom.js";
+import { readJson } from "./utils.js";
 
 export function createApi(env) {
   // define middleware
@@ -48,6 +49,9 @@ export function createApi(env) {
       res.json(true);
     }
   });
+
+  
+
 
   router.use(logForbiddenErrors());
   router.use(logErrors());

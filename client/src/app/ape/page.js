@@ -6,16 +6,23 @@ import { useQuery, useMutation, useQueryClient, useIsMutating } from "@tanstack/
 import { v4 as uuidv4 } from "uuid";
 import { useRouter, usePathname } from "next/navigation";
 import { submit, upload } from "@/services/queries";
+import * as dicomParser from "dicom-parser";
+import axios from "axios";
 
-export default function ApePage() {
+
+export default function ApeForm() {
   const queryClient = useQueryClient();
   const {
     register,
     handleSubmit,
     watch,
     reset,
+    setValue,
     formState: { errors },
   } = useForm();
+
+  const router = useRouter();
+
 
   const submitForm = useMutation({
     mutationKey: "submit",
@@ -39,7 +46,7 @@ export default function ApePage() {
   }
 
   async function onSubmit(formData) {
-    console.log(formData);
+    console.log("Mock form data: ", formData);
     setFormError(null);
     const id = uuidv4();
 
@@ -50,13 +57,15 @@ export default function ApePage() {
         const fileData = new FormData();
         fileData.append("files", file);
         fileData.append("id", id);
-        // await axios.post(`/api/submit/${id}`, fileData);
         await upload(id, fileData);
         filesUploaded++;
         setProgress(Math.round((filesUploaded * 100) / formData.files.length));
         setProgressLabel(`Uploaded ${filesUploaded} of ${formData.files.length} files`);
       }
       await submitForm.mutateAsync({ params: { id, ...formData } });
+
+    // Redirect to results page
+    router.push(`/ape/results?id=${id}`);
     } catch (error) {
       console.error("Error uploading files:", error);
       setFormError(error.response?.data?.message || error.message || "An unknown error occurred.");
@@ -66,6 +75,46 @@ export default function ApePage() {
   function onReset(event) {
     event.preventDefault();
     reset();
+  }
+
+  async function handleFileChange(event) {
+    const files = Array.from(event.target.files || []);
+    if (!files.length) return;
+
+    const firstFile = files[0];
+    try {
+      const arrayBuffer = await firstFile.arrayBuffer();
+      const byteArray = new Uint8Array(arrayBuffer);
+      const dataSet = dicomParser.parseDicom(byteArray);
+
+      // Log all tags and their values
+    console.log("DICOM Metadata:");
+    for (const tag in dataSet.elements) {
+      const element = dataSet.elements[tag];
+      const value = dataSet.string(tag);
+      console.log(`${tag} → ${value}`);
+    }
+
+      const sex = dataSet.string('x00100040'); // PatientSex
+      const ageStr = dataSet.string('x00101010'); // e.g., "034Y"
+      const heightStr = dataSet.string('x00101020'); // in meters
+      const weightStr = dataSet.string('x00101030'); // in kg
+      const sliceThicknessStr = dataSet.string('x00180050'); // in mm 
+      const kvpStr = dataSet.string('x00180060'); // in kVp
+
+      if (sex) setValue("sex", ["M", "F"].includes(sex) ? sex : "NA");
+      if (ageStr) setValue("age", parseInt(ageStr));
+      if (heightStr) {
+        const heightCm = parseFloat(heightStr) * 100;
+        if (!isNaN(heightCm)) setValue("height", heightCm);
+      }
+      if (weightStr) setValue("weight", parseFloat(weightStr));
+      if (sliceThicknessStr) setValue("thickness", parseFloat(sliceThicknessStr));
+      if (kvpStr) setValue("kvp", parseFloat(kvpStr));
+    } catch (err) {
+      console.error("Failed to read DICOM metadata", err);
+      setFormError("Could not extract metadata from the DICOM file.");
+    }
   }
 
   return (
@@ -79,6 +128,22 @@ export default function ApePage() {
                 filtering the reference library of patients for extension.
               </p>
               <Form onSubmit={handleSubmit(onSubmit)} onReset={onReset} noValidate>
+                <Form.Group controlId="files" className="my-3">
+                  <Form.Label>CT Images (DICOM / Nifti)</Form.Label>
+                  <Form.Control
+                    {...register("files", { required: true })}
+                    type="file"
+                    multiple
+                    accept=".dcm,.nii,nii.gz,.txt"
+                    isInvalid={errors?.files}
+                    // disabled={formState.status}
+                    onChange={handleFileChange}
+                  />
+                  <Form.Text className="text-muted d-block">Upload a Nifti file or several DICOM files</Form.Text>
+                  <Form.Control.Feedback className="d-block" type="invalid">
+                    {errors?.files && errors.files.message}
+                  </Form.Control.Feedback>
+                </Form.Group>
                 <Form.Group controlId="sex" className="my-3">
                   <Form.Label>Sex</Form.Label>
                   <Form.Select {...register("sex")}>
@@ -116,7 +181,7 @@ export default function ApePage() {
                     onWheel={numberInputOnWheelPreventChange}
                   />
                   <Form.Text className="text-danger">{errors?.height?.message}</Form.Text>
-                </Form.Group>
+                </Form.Group>                
                 <Form.Group controlId="weight" className="my-3">
                   <Form.Label className="fw-bold">Weight (kg)</Form.Label>
                   <Form.Control
@@ -164,22 +229,7 @@ export default function ApePage() {
                     onWheel={numberInputOnWheelPreventChange}
                   />
                   <Form.Text className="text-danger">{errors?.thickness?.message}</Form.Text>
-                </Form.Group>
-                <Form.Group controlId="files" className="my-3">
-                  <Form.Label>CT Images (DICOM / Nifti)</Form.Label>
-                  <Form.Control
-                    {...register("files", { required: true })}
-                    type="file"
-                    multiple
-                    accept=".dcm,.nii,nii.gz"
-                    isInvalid={errors?.files}
-                    // disabled={formState.status}
-                  />
-                  <Form.Text className="text-muted d-block">Upload a Nifti file or several DICOM files</Form.Text>
-                  <Form.Control.Feedback className="d-block" type="invalid">
-                    {errors?.files && errors.files.message}
-                  </Form.Control.Feedback>
-                </Form.Group>
+                </Form.Group>                
                 <Form.Group controlId="email" className="my-3">
                   <Form.Label className="fw-bold">Email</Form.Label>
                   <Form.Control
