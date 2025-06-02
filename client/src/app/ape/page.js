@@ -10,7 +10,7 @@ import * as dicomParser from "dicom-parser";
 import axios from "axios";
 
 
-export default function ApePage() {
+export default function ApeForm() {
   const queryClient = useQueryClient();
   const {
     register,
@@ -128,6 +128,22 @@ export default function ApePage() {
                 filtering the reference library of patients for extension.
               </p>
               <Form onSubmit={handleSubmit(onSubmit)} onReset={onReset} noValidate>
+                <Form.Group controlId="files" className="my-3">
+                  <Form.Label>CT Images (DICOM / Nifti)</Form.Label>
+                  <Form.Control
+                    {...register("files", { required: true })}
+                    type="file"
+                    multiple
+                    accept=".dcm,.nii,nii.gz,.txt"
+                    isInvalid={errors?.files}
+                    // disabled={formState.status}
+                    onChange={handleFileChange}
+                  />
+                  <Form.Text className="text-muted d-block">Upload a Nifti file or several DICOM files</Form.Text>
+                  <Form.Control.Feedback className="d-block" type="invalid">
+                    {errors?.files && errors.files.message}
+                  </Form.Control.Feedback>
+                </Form.Group>
                 <Form.Group controlId="sex" className="my-3">
                   <Form.Label>Sex</Form.Label>
                   <Form.Select {...register("sex")}>
@@ -213,23 +229,7 @@ export default function ApePage() {
                     onWheel={numberInputOnWheelPreventChange}
                   />
                   <Form.Text className="text-danger">{errors?.thickness?.message}</Form.Text>
-                </Form.Group>
-                <Form.Group controlId="files" className="my-3">
-                  <Form.Label>CT Images (DICOM / Nifti)</Form.Label>
-                  <Form.Control
-                    {...register("files", { required: true })}
-                    type="file"
-                    multiple
-                    accept=".dcm,.nii,nii.gz"
-                    isInvalid={errors?.files}
-                    // disabled={formState.status}
-                    onChange={handleFileChange}
-                  />
-                  <Form.Text className="text-muted d-block">Upload a Nifti file or several DICOM files</Form.Text>
-                  <Form.Control.Feedback className="d-block" type="invalid">
-                    {errors?.files && errors.files.message}
-                  </Form.Control.Feedback>
-                </Form.Group>
+                </Form.Group>                
                 <Form.Group controlId="email" className="my-3">
                   <Form.Label className="fw-bold">Email</Form.Label>
                   <Form.Control
