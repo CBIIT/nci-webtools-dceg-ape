@@ -82,6 +82,8 @@ export default function ApeForm() {
     if (!files.length) return;
 
     const firstFile = files[0];
+    const baseName = firstFile.name.replace(/\.[^/.]+$/, ""); // strip extension
+    setValue("jobName", baseName); // set default job name
     try {
       const arrayBuffer = await firstFile.arrayBuffer();
       const byteArray = new Uint8Array(arrayBuffer);
@@ -229,11 +231,26 @@ export default function ApeForm() {
                     onWheel={numberInputOnWheelPreventChange}
                   />
                   <Form.Text className="text-danger">{errors?.thickness?.message}</Form.Text>
+                </Form.Group>
+                <Form.Group controlId="jobName" className="my-3">
+                  <Form.Label className="fw-bold">Job Name</Form.Label>
+                  <Form.Control
+                    {...register("jobName", {
+                      required: "Job Name is required",
+                      minLength: { value: 3, message: "Job name must be at least 3 characters" },
+                    })}
+                    placeholder="Will be auto-filled from first file name"
+                    type="text"
+                  />
+                  <Form.Control.Feedback className="d-block" type="invalid">
+                    {errors?.jobName?.message}
+                  </Form.Control.Feedback>
                 </Form.Group>                
                 <Form.Group controlId="email" className="my-3">
                   <Form.Label className="fw-bold">Email</Form.Label>
                   <Form.Control
                     {...register("email", {
+                      required: "Email is required",
                       pattern: {
                         value: /\S+@\S+\.\S+/,
                         message: "Entered value does not match email format",
