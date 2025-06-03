@@ -2,6 +2,7 @@ import path from "path";
 import { BatchClient, SubmitJobCommand } from "@aws-sdk/client-batch";
 import { readJson } from "./utils.js";
 import { createLogger } from "./logger.js";
+import { sendNotification } from "./notifications.js";
 
 export function getWorkerCommand(id) {
   return ["node", ["--env-file=.env", "worker.js", id]];
@@ -27,7 +28,25 @@ export function getWorker(workerType = "local") {
 export async function runLocalWorker(id, env = process.env) {
   const paramsFilePath = path.resolve(env.INPUT_FOLDER, id, "params.json");
   const params = await readJson(paramsFilePath);
+  
   const logger = createLogger(env.APP_NAME, env.LOG_LEVEL);
+  const submittedAt = new Date().toISOString();
+  logger.debug(`Worker params: ${JSON.stringify(params)}`);
+  if (params.email) {
+      logger.info(`Sending results email`);
+      logger.info(`Email: ${params.email}`);
+      await sendNotification(
+        params.email,
+        `APE - ${params.jobName} - ${submittedAt} EST`,
+        "templates/user-success-email.html",
+        {
+          submittedAt,
+          resultsUrl: `${env.APP_BASE_URL}ape?id=${id}`,
+          emailAdmin: env.EMAIL_ADMIN,
+          jobName: params.jobName,
+        }
+      );
+    }
   logger.debug("run local worker TBA");
 }
 
