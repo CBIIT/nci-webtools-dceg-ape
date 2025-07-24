@@ -3,20 +3,22 @@ services:
     build:
       context: "."
       dockerfile: "./docker/backend.dockerfile"
+    volumes:
+      - ./data:/app/data
     env_file: server/.env
     ports:
       - "9000:9000"
     volumes:
       - ./data:/data
 
-  frontend:
-    build:
-      context: "."
-      dockerfile: "./docker/frontend.dockerfile"
-      args:
-        NEXT_PUBLIC_API_BASE_URL: http://backend:9000
-    ports:
-      - "3000:80"
+  # frontend:
+  #   build:
+  #     context: "."
+  #     dockerfile: "./docker/frontend.dockerfile"
+  #     args:
+  #       NEXT_PUBLIC_API_BASE_URL: http://backend:9000
+  #   ports:
+  #     - "3000:80"
 
   worker:
     profiles:

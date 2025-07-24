@@ -51,17 +51,29 @@ export default function ApeForm() {
     const id = uuidv4();
 
     try {
-      // do not upload files in parallel (minimize memory usage & time per upload)
+      // Upload files in 5MB chunks
+      const CHUNK_SIZE = 5 * 1024 * 1024;
+      const totalFiles = formData.files.length;
       let filesUploaded = 0;
+
       for (const file of formData.files) {
-        const fileData = new FormData();
-        fileData.append("files", file);
-        fileData.append("id", id);
-        await upload(id, fileData);
-        filesUploaded++;
-        setProgress(Math.round((filesUploaded * 100) / formData.files.length));
-        setProgressLabel(`Uploaded ${filesUploaded} of ${formData.files.length} files`);
+        const totalChunks = Math.ceil(file.size / CHUNK_SIZE);
+        
+        for (let i = 0; i < totalChunks; i++) {
+          const chunk = file.slice(i * CHUNK_SIZE, Math.min((i + 1) * CHUNK_SIZE, file.size));
+          const data = new FormData();
+          data.append("files", chunk, file.name);
+          data.append("id", id);
+          data.append("originalFileName", file.name);
+          data.append("fileSize", file.size);
+          
+          await upload(id, data, i, totalChunks);
+        }
+        
+        setProgress(Math.round((++filesUploaded * 100) / totalFiles));
+        setProgressLabel(`Uploaded ${filesUploaded} of ${totalFiles} files`);
       }
+      
       await submitForm.mutateAsync({ params: { id, ...formData } });
 
     // Redirect to results page

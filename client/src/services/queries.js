@@ -26,8 +26,10 @@ export async function submit(id, params) {
   return await axios.post(`/api/submit/${id}`, { params });
 }
 
-export async function upload(id, file) {
-  return await axios.post(`/api/submit/${id}`, file);
+export async function upload(id, fileData, chunkIndex = 0, totalChunks = 1) {
+  fileData.append("chunkIndex", chunkIndex);
+  fileData.append("totalChunks", totalChunks);
+  return await axios.post(`/api/submit/${id}`, fileData);
 }
 
 export async function getStatus(id) {
