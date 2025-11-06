@@ -5,10 +5,11 @@ RUN dnf -y update \
    gcc-c++ \
    httpd \
    make \
-   nodejs \
-   npm \
+   nodejs20 \
+   nodejs20-npm  \
    && dnf clean all
 
+RUN ln -s -f /usr/bin/node-20 /usr/bin/node; ln -s -f /usr/bin/npm-20 /usr/bin/npm;
 RUN mkdir -p /app/client
 
 WORKDIR /app/client

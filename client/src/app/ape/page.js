@@ -7,8 +7,6 @@ import { v4 as uuidv4 } from "uuid";
 import { useRouter, usePathname } from "next/navigation";
 import { submit, upload } from "@/services/queries";
 import * as dicomParser from "dicom-parser";
-import axios from "axios";
-
 
 export default function ApeForm() {
   const queryClient = useQueryClient();
@@ -22,7 +20,6 @@ export default function ApeForm() {
   } = useForm();
 
   const router = useRouter();
-
 
   const submitForm = useMutation({
     mutationKey: "submit",
@@ -58,7 +55,7 @@ export default function ApeForm() {
 
       for (const file of formData.files) {
         const totalChunks = Math.ceil(file.size / CHUNK_SIZE);
-        
+
         for (let i = 0; i < totalChunks; i++) {
           const chunk = file.slice(i * CHUNK_SIZE, Math.min((i + 1) * CHUNK_SIZE, file.size));
           const data = new FormData();
@@ -66,18 +63,18 @@ export default function ApeForm() {
           data.append("id", id);
           data.append("originalFileName", file.name);
           data.append("fileSize", file.size);
-          
+
           await upload(id, data, i, totalChunks);
         }
-        
+
         setProgress(Math.round((++filesUploaded * 100) / totalFiles));
         setProgressLabel(`Uploaded ${filesUploaded} of ${totalFiles} files`);
       }
-      
+
       await submitForm.mutateAsync({ params: { id, ...formData } });
 
-    // Redirect to results page
-    router.push(`/ape/results?id=${id}`);
+      // Redirect to results page
+      router.push(`/ape/results?id=${id}`);
     } catch (error) {
       console.error("Error uploading files:", error);
       setFormError(error.response?.data?.message || error.message || "An unknown error occurred.");
@@ -102,19 +99,19 @@ export default function ApeForm() {
       const dataSet = dicomParser.parseDicom(byteArray);
 
       // Log all tags and their values
-    console.log("DICOM Metadata:");
-    for (const tag in dataSet.elements) {
-      const element = dataSet.elements[tag];
-      const value = dataSet.string(tag);
-      console.log(`${tag} → ${value}`);
-    }
+      console.log("DICOM Metadata:");
+      for (const tag in dataSet.elements) {
+        const element = dataSet.elements[tag];
+        const value = dataSet.string(tag);
+        console.log(`${tag} → ${value}`);
+      }
 
-      const sex = dataSet.string('x00100040'); // PatientSex
-      const ageStr = dataSet.string('x00101010'); // e.g., "034Y"
-      const heightStr = dataSet.string('x00101020'); // in meters
-      const weightStr = dataSet.string('x00101030'); // in kg
-      const sliceThicknessStr = dataSet.string('x00180050'); // in mm 
-      const kvpStr = dataSet.string('x00180060'); // in kVp
+      const sex = dataSet.string("x00100040"); // PatientSex
+      const ageStr = dataSet.string("x00101010"); // e.g., "034Y"
+      const heightStr = dataSet.string("x00101020"); // in meters
+      const weightStr = dataSet.string("x00101030"); // in kg
+      const sliceThicknessStr = dataSet.string("x00180050"); // in mm
+      const kvpStr = dataSet.string("x00180060"); // in kVp
 
       if (sex) setValue("sex", ["M", "F"].includes(sex) ? sex : "NA");
       if (ageStr) setValue("age", parseInt(ageStr));
@@ -195,7 +192,7 @@ export default function ApeForm() {
                     onWheel={numberInputOnWheelPreventChange}
                   />
                   <Form.Text className="text-danger">{errors?.height?.message}</Form.Text>
-                </Form.Group>                
+                </Form.Group>
                 <Form.Group controlId="weight" className="my-3">
                   <Form.Label className="fw-bold">Weight (kg)</Form.Label>
                   <Form.Control
@@ -257,7 +254,7 @@ export default function ApeForm() {
                   <Form.Control.Feedback className="d-block" type="invalid">
                     {errors?.jobName?.message}
                   </Form.Control.Feedback>
-                </Form.Group>                
+                </Form.Group>
                 <Form.Group controlId="email" className="my-3">
                   <Form.Label className="fw-bold">Email</Form.Label>
                   <Form.Control

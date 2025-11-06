@@ -9,12 +9,13 @@ import Header from "@/components/header";
 import Navbar from "@/components/navbar";
 import Footer from "@/components/footer";
 import { QueryClientProvider, QueryClient } from "@tanstack/react-query";
+import { AuthProvider } from "@/contexts/auth";
 import "./styles/main.scss";
 
 export default function RootLayout({ children }) {
   const routes = [
     { title: "Home", path: "/", subRoutes: [] },
-    { title: "APE", path: "/ape", subRoutes: [] },
+    { title: "APE", path: "/ape", subRoutes: [], requireLogin: true },
     { title: "About", path: "/about", subRoutes: [] },
   ];
   const queryClient = new QueryClient({});
@@ -29,16 +30,18 @@ export default function RootLayout({ children }) {
         <Script src="https://cbiit.github.io/nci-softwaresolutions-elements/components/include-html.js"></Script>
       </head>
       <body className="d-flex flex-column vh-100" style={{ minHeight: 300 }}>
-        <Header />
-        <main className="position-relative d-flex flex-column flex-grow-1 align-items-stretch bg-black">
-          <Navbar routes={routes} />
-          <ErrorBoundary fallback={<Alert variant="warning">Error loading page</Alert>}>
-            <Suspense fallback={<Loading />}>
-              <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
-            </Suspense>
-          </ErrorBoundary>
-        </main>
-        <Footer />
+        <QueryClientProvider client={queryClient}>
+          <AuthProvider>
+            <Header />
+            <main className="position-relative d-flex flex-column flex-grow-1 align-items-stretch bg-black">
+              <Navbar routes={routes} />
+              <ErrorBoundary fallback={<Alert variant="warning">Error loading page</Alert>}>
+                <Suspense fallback={<Loading />}>{children}</Suspense>
+              </ErrorBoundary>
+            </main>
+            <Footer />
+          </AuthProvider>
+        </QueryClientProvider>
       </body>
     </html>
   );
