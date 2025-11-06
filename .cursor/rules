@@ -1,0 +1,127 @@
+# Cursor Rules
+
+## Code Conciseness
+
+- Write concise, readable code. Prefer clarity over verbosity.
+- Avoid unnecessary comments. Code should be self-documenting.
+- Use descriptive variable names, but keep them short when context is clear.
+- Prefer early returns and guard clauses over nested conditionals.
+- Use modern JavaScript features (arrow functions, destructuring, optional chaining, nullish coalescing).
+- Extract repeated logic into reusable functions/components, but avoid premature abstraction.
+
+## Code Style
+
+- Use ES6+ modules (import/export) consistently.
+- Use const by default, let only when reassignment is needed, avoid var.
+- Use template literals for string interpolation.
+- Prefer async/await over Promise chains.
+- Use optional chaining (?.) and nullish coalescing (??) for safe property access.
+- Prefer functional programming patterns (map, filter, reduce) over imperative loops when appropriate.
+
+## React/Next.js Best Practices
+
+- Use functional components with hooks. Avoid class components.
+- Keep components small and focused on a single responsibility.
+- Extract complex logic into custom hooks.
+- Use "use client" directive only when necessary (client-side interactivity, hooks, browser APIs, Context API).
+- Keep server components as the default. Move to client components only when needed.
+- Use Next.js built-in features (Image, Link, Script) over generic HTML elements.
+- Handle loading and error states explicitly.
+- Use TanStack Query (React Query) for data fetching and caching.
+- Use Context API for shared state (like authentication).
+- Use default exports for React components.
+- Use clsx for conditional CSS classes.
+- Use React Bootstrap components and Bootstrap utility classes for styling.
+
+## Node.js/Express Best Practices
+
+- Use async/await for asynchronous operations. Handle errors with try/catch.
+- Always validate user input using express-validator.
+- Use environment variables for configuration. Never hardcode secrets.
+- Implement proper error handling with appropriate HTTP status codes.
+- Use middleware for cross-cutting concerns (auth, logging, validation).
+- Keep route handlers focused. Extract business logic into service modules.
+- Use structured logging (via logger service) instead of console.log in production code.
+- Use express-session for session management. Configure DynamoDB store for production.
+- Use passport.js with OIDC strategies for authentication.
+- Use multer for file uploads with custom storage implementations.
+- Use compression middleware for response compression.
+- Use CORS middleware appropriately.
+
+## Error Handling
+
+- Handle errors explicitly. Don't silently swallow exceptions.
+- Provide meaningful error messages for debugging, but sanitize for production.
+- Use appropriate HTTP status codes.
+- Log errors with sufficient context using the logger service.
+- Use error boundaries in React for graceful error handling.
+- Use express-validator's handleValidationErrors middleware for validation errors.
+
+## Security
+
+- Never expose secrets, API keys, or credentials in code or version control.
+- Validate and sanitize all user inputs using express-validator.
+- Implement proper authentication and authorization checks using passport.js.
+- Use HTTPS in production.
+- Set secure cookie flags (httpOnly, secure, sameSite) in session configuration.
+- Store OAuth state and nonce in session, not in URL parameters.
+- Keep dependencies up to date and audit for vulnerabilities.
+
+## Performance
+
+- Avoid unnecessary re-renders in React. Use React.memo, useMemo, useCallback judiciously.
+- Use TanStack Query's caching and refetching strategies appropriately.
+- Use compression middleware for API responses.
+- Avoid blocking the event loop with synchronous operations.
+- Use Next.js middleware for route protection instead of client-side checks.
+
+## Code Organization
+
+- Group related functionality together.
+- Keep files focused. Split large files into smaller modules.
+- Use consistent naming conventions (camelCase for variables/functions, PascalCase for components/classes).
+- Place imports in this order: external packages, internal modules, relative imports.
+- Use default exports for React components and main module exports.
+- Use named exports for utilities, services, and shared functions.
+- Organize server code into services (auth, db, api, etc.).
+- Organize client code into components, contexts, and services.
+
+## Session Management
+
+- Use express-session with DynamoDB store in production, memory store in development.
+- Store OAuth state, nonce, and code verifier in session during authentication flow.
+- Clean up session data after authentication completes.
+- Use session.touch() to extend session expiration on activity.
+- Configure session cookies with appropriate security flags based on environment.
+
+## File Uploads
+
+- Use multer with custom storage implementations for file uploads.
+- Handle chunked uploads when dealing with large files.
+- Validate file types and sizes before processing.
+- Clean up temporary files after processing.
+
+## Environment Configuration
+
+- Use environment variables for all configuration (see example.env).
+- Never commit .env files or secrets to version control.
+- Use example.env files to document required environment variables.
+- Validate required environment variables at application startup.
+
+## API Design
+
+- Use RESTful conventions for API endpoints.
+- Return consistent JSON response formats.
+- Use appropriate HTTP methods (GET, POST, PUT, PATCH, DELETE).
+- Use express-validator for request validation.
+- Implement proper error responses with appropriate status codes.
+
+## General Principles
+
+- Write code for humans first, computers second.
+- Prefer explicit over implicit.
+- Don't repeat yourself (DRY), but don't abstract prematurely.
+- Keep it simple. Avoid over-engineering.
+- Refactor when code smells appear, but don't refactor working code unnecessarily.
+- Follow the principle of least surprise.
+- Make it work, make it right, make it fast (in that order).
