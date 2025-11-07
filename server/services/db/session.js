@@ -1,12 +1,14 @@
 import session from "express-session";
 import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
 import connectDynamoDB from "connect-dynamodb";
+import connectSqlite3 from "connect-sqlite3";
+import path from "path";
 
 const DynamoDBStore = connectDynamoDB(session);
+const SQLiteStore = connectSqlite3(session);
 
 /**
- * Create session middleware with appropriate storage backend
- * Currently uses MemoryStore, can be easily switched to DynamoDB
+ * Create session middleware
  */
 export function createSession(env, logger) {
   const sessionConfig = {
@@ -20,7 +22,7 @@ export function createSession(env, logger) {
     rolling: true, // Reset expiration on each request
     saveUninitialized: false, // Don't create session until something stored
     secret: env.SESSION_SECRET,
-    name: env.SESSION_COOKIE_NAME || "sid",
+    name: env.SESSION_COOKIE_NAME || "connect.sid",
     store: createSessionStore(env, logger),
   };
 
@@ -32,27 +34,22 @@ export function createSession(env, logger) {
  * @returns {session.Store} Session store instance
  */
 function createSessionStore(env, logger) {
-  // Use DynamoDB in production if configured
-  if (env.USE_DYNAMODB_SESSIONS === "true" && env.AWS_REGION) {
-    logger.debug("[Session] Using DynamoDB session store", {
-      table: env.DYNAMODB_SESSION_TABLE || "sessions",
-      region: env.AWS_REGION,
-    });
+  // return new DynamoDBStore({
+  //   client: new DynamoDBClient({
+  //     region: env.AWS_REGION,
+  //   }),
+  //   table: env.DYNAMODB_SESSION_TABLE || "sessions",
+  // });
 
-    return new DynamoDBStore({
-      client: new DynamoDBClient({
-        region: env.AWS_REGION,
-      }),
-      table: env.DYNAMODB_SESSION_TABLE || "sessions",
-    });
-  }
+  const dataFolder = env.DATA_FOLDER;
 
-  // Use in-memory store (default)
-  logger.debug("[Session] Using in-memory session store (not suitable for production)");
-
-  // express-session will use MemoryStore by default if no store is specified
-  // We explicitly return undefined to use the default MemoryStore
-  return undefined;
+  return new SQLiteStore({
+    db: "sessions.db",
+    dir: dataFolder,
+    table: "sessions",
+    // Cleanup expired sessions every hour
+    concurrentDB: true,
+  });
 }
 
 /**

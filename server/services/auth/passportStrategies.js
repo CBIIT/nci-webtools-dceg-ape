@@ -88,6 +88,12 @@ class OpenIDStrategy extends passport.Strategy {
     const oauth = req.session.oauth;
 
     if (!oauth) {
+      logger.error("[OAuth] Session data missing", {
+        sessionId: req.sessionID,
+        hasSession: !!req.session,
+        sessionKeys: Object.keys(req.session || {}),
+        cookies: req.headers.cookie,
+      });
       throw new Error("OAuth session data not found. Session may have expired.");
     }
 
