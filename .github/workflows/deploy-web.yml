@@ -1,4 +1,4 @@
-name: Deploy
+name: Deploy Web Service
 on:
   workflow_dispatch:
     inputs:
@@ -28,23 +28,7 @@ jobs:
       BACKEND_CONTAINER_PORT: 9000
       TIER: ${{ (endsWith(github.ref, '_dev') && 'dev') || (endsWith(github.ref, '_qa') && 'qa') || 'dev' }}
       IMAGE_TIER: ${{ (endsWith(github.ref, '_dev') || endsWith(github.ref, '_qa')) && 'development' || 'release' }}
-      BATCH_INSTANCE_TYPE: g6.xlarge
-      BATCH_CPU_UNITS: 4
-      BATCH_GPU_UNITS: 1
-      BATCH_MEMORY_UNITS: 15000
-      LAUNCH_TEMPLATE_NAME: batch-increase-container-volume-encrypt
     steps:
-      - name: Free Disk Space (Ubuntu)
-        uses: jlumbroso/free-disk-space@v1.3.1
-        with:
-          tool-cache: false
-          android: true
-          dotnet: true
-          haskell: true
-          large-packages: false
-          docker-images: true
-          swap-storage: true
-
       - uses: "actions/checkout@v4"
 
       - name: Configure AWS credentials
@@ -139,19 +123,6 @@ jobs:
             ${{ env.FRONTEND_IMAGE_LATEST }}
           cache-from: type=registry,ref=${{ env.IMAGE_REPOSITORY }}:frontend-cache
           cache-to: type=registry,ref=${{ env.IMAGE_REPOSITORY }}:frontend-cache,image-manifest=true,oci-mediatypes=true,mode=max
-
-      - name: Build batch image ${{ env.BATCH_WORKER_IMAGE }}
-        uses: docker/build-push-action@v6
-        with:
-          context: .
-          file: docker/batch-gpu-worker.dockerfile
-          pull: true
-          push: true
-          tags: |
-            ${{ env.BATCH_WORKER_IMAGE }}
-            ${{ env.BATCH_WORKER_IMAGE_LATEST }}
-          cache-from: type=registry,ref=${{ env.IMAGE_REPOSITORY }}:batch-cache
-          cache-to: type=registry,ref=${{ env.IMAGE_REPOSITORY }}:batch-cache,image-manifest=true,oci-mediatypes=true,mode=max
 
       - name: render task definition for frontend
         id: render-frontend
@@ -249,43 +220,6 @@ jobs:
           desired-count: 1
           force-new-deployment: true
           propagate-tags: true
-
-      - name: substitute batch job definition variables
-        id: substitute-batch-job-definition
-        run: |
-          echo "Substituting task definition variables"
-          envsubst < $TASK_DEFINITION_TEMPLATE_PATH/batch-worker.json > batch-worker.json
-        env:
-          BATCH_JOB_DEFINITION: ${{ env.BATCH_JOB_DEFINITION }}
-          BATCH_WORKER_IMAGE_LATEST: ${{ env.BATCH_WORKER_IMAGE_LATEST }}
-          BATCH_ROLE_ARN: ${{ env.BATCH_ROLE_ARN }}
-          EFS_FILESYSTEM_ID: ${{ env.EFS_FILESYSTEM_ID }}
-          EFS_ACCESS_POINT_ID: ${{ env.EFS_ACCESS_POINT_ID }}
-          BATCH_GPU_UNITS: ${{ env.BATCH_GPU_UNITS }}
-          BATCH_CPU_UNITS: ${{ env.BATCH_CPU_UNITS }}
-          BATCH_MEMORY_UNITS: ${{ env.BATCH_MEMORY_UNITS }}
-          AWS_REGION: ${{ env.AWS_REGION }}
-          APP: ${{ env.APP }}
-          TIER: ${{ env.TIER }}
-          VERSION: ${{ env.VERSION }}
-          TZ: ${{ env.TZ }}
-          COMMIT_ID: ${{ github.sha }}
-
-      - name: Print rendered task definition
-        run: |
-          echo "Rendered web Task Definition:"
-          cat batch-worker.json
-
-      - name: Register batch job definitions
-        run: "aws batch register-job-definition --cli-input-json file://batch-worker.json"
-
-      - name: Update batch compute environment instance type
-        run: |
-          aws batch update-compute-environment \
-            --compute-environment $BATCH_COMPUTE_ENVIRONMENT \
-            --compute-resources "{\"instanceTypes\":[\"$BATCH_INSTANCE_TYPE\"], \"launchTemplate\":{\"launchTemplateName\":\"$LAUNCH_TEMPLATE_NAME\", \"version\":\"$LT_VERSION\"}}"
-        env:
-          LT_VERSION: "$Latest"
 
       - name: Remove old task definitions
         run: |

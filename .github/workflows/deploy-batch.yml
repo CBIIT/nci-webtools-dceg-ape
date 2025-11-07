@@ -1,0 +1,146 @@
+name: Deploy Batch Worker
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: "Environment to deploy to"
+        type: environment
+        required: true
+
+jobs:
+  Deploy:
+    permissions:
+      contents: "read"
+      id-token: "write"
+    runs-on: ubuntu-latest
+    environment: ${{ (endsWith(github.ref, '_dev') && 'dev') || (endsWith(github.ref, '_qa') && 'qa') || inputs.environment || 'dev' }}
+    env:
+      APP: ape
+      TZ: America/New_York
+      AWS_REGION: us-east-1
+      TASK_DEFINITION_TEMPLATE_PATH: .aws
+      DOCKER_BUILDKIT: 1
+      TIER: ${{ (endsWith(github.ref, '_dev') && 'dev') || (endsWith(github.ref, '_qa') && 'qa') || 'dev' }}
+      IMAGE_TIER: ${{ (endsWith(github.ref, '_dev') || endsWith(github.ref, '_qa')) && 'development' || 'release' }}
+      BATCH_INSTANCE_TYPE: g6.xlarge
+      BATCH_CPU_UNITS: 4
+      BATCH_GPU_UNITS: 1
+      BATCH_MEMORY_UNITS: 15000
+      LAUNCH_TEMPLATE_NAME: batch-increase-container-volume-encrypt
+    steps:
+      - name: Free Disk Space (Ubuntu)
+        uses: jlumbroso/free-disk-space@v1.3.1
+        with:
+          tool-cache: false
+          android: true
+          dotnet: true
+          haskell: true
+          large-packages: true
+          docker-images: true
+          swap-storage: true
+
+      - uses: "actions/checkout@v4"
+
+      - name: Configure AWS credentials
+        id: aws-credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Set dynamic environment variables
+        run: |
+          BRANCH_NAME=${{ github.ref_name }}
+          VERSION=$(echo "$BRANCH_NAME" | awk -F'_' '{print $2}')
+          DATE=$(echo "$BRANCH_NAME" | awk -F'_' '{print $3}')
+          echo "VERSION=${VERSION:-unknown_version}" >> $GITHUB_ENV
+          echo "DATE=${DATE:-unknown_date}" >> $GITHUB_ENV
+
+          TIMESTAMP=$(date +"%Y%m%d%H%M%S")
+          REPO=${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.$AWS_REGION.amazonaws.com/$APP
+          echo "IMAGE_REPOSITORY=$REPO" >> $GITHUB_ENV
+          echo "BATCH_WORKER_IMAGE=$REPO:$IMAGE_TIER-batch-worker-${{ github.ref_name }}-$TIMESTAMP" >> $GITHUB_ENV
+          echo "BATCH_WORKER_IMAGE_LATEST=$REPO:$IMAGE_TIER-batch-worker-${{ github.ref_name }}-latest" >> $GITHUB_ENV
+          echo "PARAMETER_PATH=/analysistools/${TIER}/${APP}" >> $GITHUB_ENV
+          echo "ENVIRONMENT_TIER=${TIER^^}" >> $GITHUB_ENV
+
+      - uses: dkershner6/aws-ssm-getparameters-action@v2
+        with:
+          parameterPairs: |
+            ${{ env.PARAMETER_PATH }}/ecs_cluster = ECS_CLUSTER,
+            ${{ env.PARAMETER_PATH }}/role_arn = ROLE_ARN,
+            ${{ env.PARAMETER_PATH }}/efs_filesystem_id = EFS_FILESYSTEM_ID,
+            ${{ env.PARAMETER_PATH }}/efs_access_point_id = EFS_ACCESS_POINT_ID,
+            ${{ env.PARAMETER_PATH }}/batch_compute_environment = BATCH_COMPUTE_ENVIRONMENT,
+            ${{ env.PARAMETER_PATH }}/batch_job_definition = BATCH_JOB_DEFINITION,
+            ${{ env.PARAMETER_PATH }}/batch_role_arn = BATCH_ROLE_ARN
+          withDecryption: "true"
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v1
+        with:
+          mask-password: true
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Create and use a new builder instance
+        run: |
+          docker buildx create --name mybuilder --use
+
+      - name: Build batch image ${{ env.BATCH_WORKER_IMAGE }}
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: docker/batch-gpu-worker.dockerfile
+          pull: true
+          push: true
+          tags: |
+            ${{ env.BATCH_WORKER_IMAGE }}
+            ${{ env.BATCH_WORKER_IMAGE_LATEST }}
+          cache-from: type=registry,ref=${{ env.IMAGE_REPOSITORY }}:batch-cache
+          cache-to: type=registry,ref=${{ env.IMAGE_REPOSITORY }}:batch-cache,image-manifest=true,oci-mediatypes=true,mode=max
+
+      - name: substitute batch job definition variables
+        id: substitute-batch-job-definition
+        run: |
+          echo "Substituting task definition variables"
+          envsubst < $TASK_DEFINITION_TEMPLATE_PATH/batch-worker.json > batch-worker.json
+        env:
+          BATCH_JOB_DEFINITION: ${{ env.BATCH_JOB_DEFINITION }}
+          BATCH_WORKER_IMAGE_LATEST: ${{ env.BATCH_WORKER_IMAGE_LATEST }}
+          BATCH_ROLE_ARN: ${{ env.BATCH_ROLE_ARN }}
+          EFS_FILESYSTEM_ID: ${{ env.EFS_FILESYSTEM_ID }}
+          EFS_ACCESS_POINT_ID: ${{ env.EFS_ACCESS_POINT_ID }}
+          BATCH_GPU_UNITS: ${{ env.BATCH_GPU_UNITS }}
+          BATCH_CPU_UNITS: ${{ env.BATCH_CPU_UNITS }}
+          BATCH_MEMORY_UNITS: ${{ env.BATCH_MEMORY_UNITS }}
+          AWS_REGION: ${{ env.AWS_REGION }}
+          APP: ${{ env.APP }}
+          TIER: ${{ env.TIER }}
+          VERSION: ${{ env.VERSION }}
+          TZ: ${{ env.TZ }}
+          COMMIT_ID: ${{ github.sha }}
+
+      - name: Print rendered batch worker job definition
+        run: |
+          echo "Rendered batch worker job definition:"
+          cat batch-worker.json
+
+      - name: Register batch job definitions
+        run: "aws batch register-job-definition --cli-input-json file://batch-worker.json"
+
+      - name: Update batch compute environment instance type
+        run: |
+          aws batch update-compute-environment \
+            --compute-environment $BATCH_COMPUTE_ENVIRONMENT \
+            --compute-resources "{\"instanceTypes\":[\"$BATCH_INSTANCE_TYPE\"], \"launchTemplate\":{\"launchTemplateName\":\"$LAUNCH_TEMPLATE_NAME\", \"version\":\"$LT_VERSION\"}}"
+        env:
+          LT_VERSION: "$Latest"
+
+      - name: Remove old batch job definitions
+        run: |
+          aws batch list-job-definitions --status ACTIVE --query 'jobDefinitions[?jobDefinitionName==`${BATCH_JOB_DEFINITION}`].jobDefinitionName' --output text \
+            | xargs -n1 -r aws batch deregister-job-definition --job-definition
