@@ -17,6 +17,11 @@ export const required = [
   "ECS_CLUSTER",
   "WORKER_TASK_NAME",
   "WORKER_TYPE",
+  "SESSION_SECRET",
+  "SESSION_MAX_AGE",
+  "OIDC_BASE_URL",
+  "OIDC_CLIENT_ID",
+  "OIDC_CALLBACK_URI",
 ];
 
 export function validateEnvironment(env = process.env, vars = required) {

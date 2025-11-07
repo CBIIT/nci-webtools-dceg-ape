@@ -35,13 +35,13 @@ jobs:
       LAUNCH_TEMPLATE_NAME: batch-increase-container-volume-encrypt
     steps:
       - name: Free Disk Space (Ubuntu)
-        uses: jlumbroso/free-disk-space@main
+        uses: jlumbroso/free-disk-space@v1.3.1
         with:
           tool-cache: false
           android: true
           dotnet: true
           haskell: true
-          large-packages: true
+          large-packages: false
           docker-images: true
           swap-storage: true
 
@@ -286,3 +286,11 @@ jobs:
             --compute-resources "{\"instanceTypes\":[\"$BATCH_INSTANCE_TYPE\"], \"launchTemplate\":{\"launchTemplateName\":\"$LAUNCH_TEMPLATE_NAME\", \"version\":\"$LT_VERSION\"}}"
         env:
           LT_VERSION: "$Latest"
+
+      - name: Remove old task definitions
+        run: |
+          for family in "$ECS_WEB_TASK"; do
+            echo "Pruning old revisions for family: $family"
+            aws ecs list-task-definitions --family-prefix "$family" --sort DESC --query 'taskDefinitionArns[3:]' --output text \
+              | xargs -n1 -r aws ecs deregister-task-definition --task-definition
+          done
