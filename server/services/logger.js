@@ -5,7 +5,17 @@ import isEmpty from "lodash/isEmpty.js";
 
 export function formatObject(object) {
   if (object instanceof Error) {
-    const errorObject = pick(object, ["code", "message", "stack", "stdout", "stderr"]);
+    const errorObject = pick(object, [
+      "code",
+      "message",
+      "stack",
+      "stdout",
+      "stderr",
+      "error",
+      "error_description",
+      "status",
+      "cause",
+    ]);
     return formatObject(errorObject);
   } else if (typeof object === "string" || typeof object === "number") {
     return String(object);

@@ -23,7 +23,7 @@ export function fileFormatter(request) {
 }
 
 export function errorFormatter(error) {
-  return { error: error.message };
+  return { error: error?.message || error?.error || String(error) };
 }
 
 export function logRequests(formatter = requestFormatter) {
